@@ -1,0 +1,60 @@
+/*
+  Font setup: Prefer 'Onest' for headings if available.
+  To use the font locally, place your font files in `public/fonts/` (e.g. `public/fonts/Onest.woff2`) and the @font-face below will load them.
+  If you have a webfont provider URL (Google/Adobe), you can replace the src with that provider's URL.
+*/
+
+@font-face {
+  font-family: 'Onest';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  /* Prefer local installation; add webfont files to `public/fonts/Onest.woff2` if you want to self-host.
+     For now we avoid referencing non-present files so the dev build doesn't fail. */
+  src: local('Onest'), local('Onest Placeholder');
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Beautiful Background Pattern */
+body {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  /* Default UI font; headings will prefer 'Onest' if available */
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
+}
+
+/* Ensure content is above background */
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure html/body/root occupy full height so background covers the page */
+html, body, #root {
+  height: 100%;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, #e2e8f0 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+  opacity: 0.6;
+}
+
+#root {
+  background: transparent;
+}
+
+/* Headings should prefer Onest when available */
+h1,h2,h3,h4,h5,h6 {
+  font-family: 'Onest', 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}

@@ -1,0 +1,204 @@
+import React, { useEffect, useRef, useState } from 'react';
+
+const Footer = () => {
+    const footerRef = useRef(null);
+    const [scale, setScale] = useState(1);
+    const [opacity, setOpacity] = useState(1);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (!footerRef.current) return;
+
+            const footer = footerRef.current;
+            const rect = footer.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            
+            // When footer enters viewport
+            if (rect.top < windowHeight && rect.bottom > 0) {
+                // Calculate how much of footer is visible
+                const visibleHeight = Math.min(rect.bottom, windowHeight) - Math.max(rect.top, 0);
+                const progress = visibleHeight / windowHeight;
+                
+                // Scale from 1 to 1.3 (much smaller scale)
+                const newScale = 1 + (progress * 0.3);
+                setScale(Math.min(newScale, 1.3));
+                
+                // Fade in large text
+                setOpacity(Math.min(progress * 2, 1));
+            } else {
+                setScale(1);
+                setOpacity(0);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll();
+
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    return (
+        <footer 
+            ref={footerRef} 
+            className="relative text-white py-8 px-6 overflow-hidden"
+            style={{
+                minHeight: '70vh',
+                transform: `scale(${scale})`,
+                transformOrigin: 'center center',
+                transition: 'transform 0.3s ease-out',
+                background: 'rgba(0, 0, 0, 0.95)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+            }}
+        >
+            {/* Animated Background Pattern */}
+            <div className="absolute inset-0 z-0">
+                <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/90 to-black"></div>
+                <div 
+                    className="absolute inset-0 opacity-3"
+                    style={{
+                        backgroundImage: `
+                            linear-gradient(to right, rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+                            linear-gradient(to bottom, rgba(99, 102, 241, 0.1) 1px, transparent 1px)
+                        `,
+                        backgroundSize: '80px 80px'
+                    }}
+                ></div>
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#6366f1]/3 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#4f46e5]/3 rounded-full blur-3xl"></div>
+            </div>
+
+            <div className="relative z-10 h-full flex flex-col justify-between">
+                {/* Large Brand Name - Bottom */}
+                <div className="relative z-20 w-full flex justify-center mb-6">
+                    <h1 className="font-black tracking-tighter text-white leading-none text-[6vw] md:text-[4.5vw] lg:text-[3.5vw]">
+                        LISTWITH<span className="text-blue-600">LEATONIC</span>
+                    </h1>
+                </div>
+
+                {/* Footer Content */}
+                <div className="relative z-20">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                            {/* Logo and Description */}
+                            <div>
+                                <a href="/">
+                                    <div className="flex items-center gap-3 mb-3 group ms-9">
+                                        <div className="w-9 h-9 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
+                                            <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
+                                                <path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" />
+                                            </svg>
+                                        </div>
+                                        <span className="text-sm font-bold bg-gradient-to-r from-[#10b981] via-[#22d3ee] to-[#6366f1] bg-clip-text text-transparent">
+                                            ListWithLeatonic
+                                        </span>
+                                    </div>
+                                </a>
+                                <p className="text-gray-400 text-xs leading-relaxed ms-9">
+                                    Your trusted partner in finding the perfect home. Making dreams come true, one property at a time.
+                                </p>
+                                
+                                {/* Social Media Icons */}
+                                <div className="flex gap-2 mt-3 ms-9">
+                                    {[
+                                        { name: 'Facebook', icon: 'M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z' },
+                                        { name: 'Twitter', icon: 'M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z' },
+                                        { name: 'Instagram', icon: 'M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37zm1.5-4.87h.01' }
+                                    ].map((social) => (
+                                        <a
+                                            key={social.name}
+                                            href="#"
+                                            className="w-10 h-10 bg-[#1a1d29] border border-[#2d3142] rounded-full flex items-center justify-center hover:bg-gradient-to-r hover:from-[#6366f1] hover:to-[#4f46e5] hover:border-transparent transition-all duration-500 hover:scale-110 group"
+                                            aria-label={social.name}
+                                        >
+                                            <svg className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={social.icon} />
+                                            </svg>
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Company */}
+                            <div>
+                                <h3 className="font-bold text-sm mb-3 text-white">Company</h3>
+                                <ul className="space-y-1.5">
+                                    {['About Us', 'Careers', 'Press', 'Blog'].map((item) => (
+                                        <li key={item}>
+                                            <a
+                                                href={`/${item.toLowerCase().replace(' ', '-')}`}
+                                                className="text-sm text-gray-400 hover:text-white hover:translate-x-2 transition-all duration-300 inline-flex items-center gap-2 group"
+                                            >
+                                                <span className="w-0 h-0.5 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] group-hover:w-4 transition-all duration-300"></span>
+                                                {item}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            {/* Resources */}
+                            <div>
+                                <h3 className="font-bold text-sm mb-3 text-white">Resources</h3>
+                                <ul className="space-y-1.5">
+                                    {['Help Center', 'Guides', 'Terms of Service', 'Privacy Policy'].map((item) => (
+                                        <li key={item}>
+                                            <a
+                                                href={`/${item.toLowerCase().replace(/ /g, '-')}`}
+                                                className="text-sm text-gray-400 hover:text-white hover:translate-x-2 transition-all duration-300 inline-flex items-center gap-2 group"
+                                            >
+                                                <span className="w-0 h-0.5 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] group-hover:w-4 transition-all duration-300"></span>
+                                                {item}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            {/* Connect */}
+                            <div>
+                                <h3 className="font-bold text-sm mb-3 text-white">Connect</h3>
+                                <ul className="space-y-1.5 mb-3">
+                                    {['Contact Us', 'Support'].map((item) => (
+                                        <li key={item}>
+                                            <a
+                                                href={`/${item.toLowerCase().replace(' ', '-')}`}
+                                                className="text-sm text-gray-400 hover:text-white hover:translate-x-2 transition-all duration-300 inline-flex items-center gap-2 group"
+                                            >
+                                                <span className="w-0 h-0.5 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] group-hover:w-4 transition-all duration-300"></span>
+                                                {item}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Bottom Bar */}
+                        <div className="border-t border-[#2d3142] pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
+                            <p className="text-gray-400 text-sm ms-9">
+                                © {new Date().getFullYear()} ListWithLeatonic. All rights reserved.
+                            </p>
+                            <div className="flex gap-4 text-xs me-10">
+                                <a href="/terms" className="text-sm text-gray-400 hover:text-white transition-all duration-300 relative group">
+                                    Terms
+                                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] group-hover:w-full transition-all duration-300"></span>
+                                </a>
+                                <a href="/privacy" className="text-sm text-gray-400 hover:text-white transition-all duration-300 relative group">
+                                    Privacy
+                                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] group-hover:w-full transition-all duration-300"></span>
+                                </a>
+                                <a href="/cookies" className="text-sm text-gray-400 hover:text-white transition-all duration-300 relative group">
+                                    Cookies
+                                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] group-hover:w-full transition-all duration-300"></span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    );
+};
+
+export default Footer;
