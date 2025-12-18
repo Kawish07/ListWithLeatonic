@@ -12,3 +12,14 @@ password.txt
 
 # Ignore node_modules
 node_modules/
+
+# Ignore caches and large pack files
+**/.cache/
+**/.parcel-cache/
+*.pack
+
+# Ignore local env variants
+.env.local
+.env.development.local
+.env.test.local
+.DS_Store
