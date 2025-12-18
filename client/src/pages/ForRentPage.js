@@ -350,8 +350,8 @@ const ForRentPage = () => {
               <div
                 className="flip-card-3d relative cursor-pointer"
                 style={{
-                  width: '400px',
-                  height: '550px',
+                  width: 'min(86vw, 420px)',
+                  height: 'min(72vh, 700px)',
                   transform: `rotateY(${rotationY}deg) scale(${scale})`,
                   opacity: cardOpacity,
                   transition: 'transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease',

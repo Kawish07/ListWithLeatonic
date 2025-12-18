@@ -343,9 +343,8 @@ const HomePage = () => {
           <div className="flex items-center justify-center gap-12">
             {/* Left Side Content */}
             <div
-              className="side-content transition-all duration-800"
+              className="side-content transition-all duration-800 w-44 sm:w-56 md:w-64 lg:w-72"
               style={{
-                width: '300px',
                 opacity: sideContentOpacity,
                 transform: `translateX(${sideContentVisible ? 0 : -50}px) scale(${0.8 + sideContentOpacity * 0.2})`
               }}
@@ -453,9 +452,8 @@ const HomePage = () => {
 
             {/* Right Side Content */}
             <div
-              className="side-content transition-all duration-800"
+              className="side-content transition-all duration-800 w-44 sm:w-56 md:w-64 lg:w-72"
               style={{
-                width: '300px',
                 opacity: sideContentOpacity,
                 transform: `translateX(${sideContentVisible ? 0 : 50}px) scale(${0.8 + sideContentOpacity * 0.2})`
               }}

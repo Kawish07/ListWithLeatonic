@@ -329,8 +329,8 @@ const ForSalePage = () => {
               <div
                 className="flip-card-3d relative cursor-pointer"
                 style={{
-                  width: '400px',
-                  height: '550px',
+                  width: 'min(86vw, 420px)',
+                  height: 'min(72vh, 700px)',
                   transform: `rotateY(${rotationY}deg) scale(${scale})`,
                   opacity: cardOpacity,
                   pointerEvents: cardPinned ? 'none' : 'auto',
