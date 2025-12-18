@@ -7,6 +7,11 @@ Thumbs.db
 secrets.txt
 password.txt
 
+# Ignore any environment files (keep examples by negation)
+*.env
+**/*.env
+!*.env.example
+
 # Ignore log files
 *.log
 
