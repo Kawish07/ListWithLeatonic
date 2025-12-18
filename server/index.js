@@ -219,18 +219,43 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const INITIAL_PORT = Number(process.env.PORT) || 5000;
+const MAX_PORT_ATTEMPTS = 10;
 
-app.listen(PORT, () => {
-  console.log('\n🚀 ============================================');
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🌐 API Base: http://localhost:${PORT}/api`);
-  console.log(`🧪 Test CORS: http://localhost:${PORT}/api/test-cors`);
-  console.log('============================================\n');
-  
-  console.log('📁 Available Endpoints:');
-  console.log('   POST   /api/client-inquiries         - Submit inquiry');
-  console.log('   GET    /api/client-inquiries         - Get all inquiries');
-  console.log('   POST   /api/test-cors                - Test CORS');
-  console.log('\n✅ CORS enabled for all origins (development mode)');
-});
+function startServer(port, attemptsLeft = MAX_PORT_ATTEMPTS) {
+  const server = app.listen(port);
+
+  server.on('listening', () => {
+    console.log('\n🚀 ============================================');
+    console.log(`✅ Server running on port ${port}`);
+    console.log(`🌐 API Base: http://localhost:${port}/api`);
+    console.log(`🧪 Test CORS: http://localhost:${port}/api/test-cors`);
+    console.log('============================================\n');
+
+    console.log('📁 Available Endpoints:');
+    console.log('   POST   /api/client-inquiries         - Submit inquiry');
+    console.log('   GET    /api/client-inquiries         - Get all inquiries');
+    console.log('   POST   /api/test-cors                - Test CORS');
+    console.log('\n✅ CORS enabled for all origins (development mode)');
+  });
+
+  server.on('error', (err) => {
+    if (err && err.code === 'EADDRINUSE') {
+      console.warn(`⚠️ Port ${port} in use.`);
+      server.close?.();
+      if (attemptsLeft > 1) {
+        const nextPort = port + 1;
+        console.log(`🔁 Trying port ${nextPort} (${attemptsLeft - 1} attempts left)`);
+        setTimeout(() => startServer(nextPort, attemptsLeft - 1), 300);
+      } else {
+        console.error(`❌ All ${MAX_PORT_ATTEMPTS} port attempts failed. Exiting.`);
+        process.exit(1);
+      }
+    } else {
+      console.error('❌ Server error:', err);
+      process.exit(1);
+    }
+  });
+}
+
+startServer(INITIAL_PORT);

@@ -14,21 +14,17 @@ export default function ScrollToTopOnRouteChange() {
 
         // Immediately jump to top using Lenis if available
         if (window.lenis) {
-          // Use immediate: true for instant scroll without animation
-          window.lenis.scrollTo(0, { 
+          // Instant, non-locking jump to top
+          window.lenis.scrollTo(0, {
             immediate: true,
-            force: true,
-            lock: true
+            force: true
           });
         } else {
           // Fallback to native scroll (instant)
           window.scrollTo(0, 0);
         }
 
-        // Reset Lenis scroll position directly
-        if (window.lenis && window.lenis.scroll) {
-          window.lenis.scroll = 0;
-        }
+        // Do not mutate Lenis internals; rely on scrollTo only
 
       } catch (err) {
         // Fallback to basic scroll
@@ -38,6 +34,20 @@ export default function ScrollToTopOnRouteChange() {
 
     // Execute scroll immediately
     scrollToTop();
+
+    // Defensive: clear any leftover global overflow locks/styles after navigation
+    try {
+      const html = document.documentElement;
+      const body = document.body;
+      html.style.overflow = '';
+      body.style.overflow = '';
+      html.style.position = '';
+      body.style.position = '';
+      html.style.height = '';
+      body.style.height = '';
+      html.classList.remove('overflow-hidden');
+      body.classList.remove('overflow-hidden');
+    } catch (e) {}
 
     // Refresh ScrollTrigger after a brief delay to recalculate positions
     // This ensures all animations and pinned sections work correctly
@@ -51,6 +61,19 @@ export default function ScrollToTopOnRouteChange() {
 
     return () => {
       clearTimeout(refreshTimer);
+      // Ensure overflow restored on unmount as well
+      try {
+        const html = document.documentElement;
+        const body = document.body;
+        html.style.overflow = '';
+        body.style.overflow = '';
+        html.style.position = '';
+        body.style.position = '';
+        html.style.height = '';
+        body.style.height = '';
+        html.classList.remove('overflow-hidden');
+        body.classList.remove('overflow-hidden');
+      } catch (e) {}
     };
   }, [location.pathname]);
 

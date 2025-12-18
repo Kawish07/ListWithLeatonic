@@ -9,11 +9,7 @@ import {
   CartesianGrid,
   Tooltip
 } from 'recharts';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { TrendingUp, TrendingDown, Zap, Shield, Clock } from 'lucide-react';
-
-gsap.registerPlugin(ScrollTrigger);
+import { TrendingUp, TrendingDown, Zap, Shield, Clock, Activity } from 'lucide-react';
 
 const DEFAULT_BASE = {
   '30yr': 6.6,
@@ -90,14 +86,14 @@ function tickCountForRange(range) {
   }
 }
 
-export default function MortgageRates({ apiUrl }) {
+export default function MortgageRates({ apiUrl, darkMode = false }) {
   const [range, setRange] = useState('1Y');
   const [data, setData] = useState(() => generateMockSeries('1Y'));
+  const [isVisible, setIsVisible] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
   const pollingRef = useRef(null);
   const sectionRef = useRef(null);
-  const cardsRef = useRef([]);
-  const chartRef = useRef(null);
-  const titleRef = useRef(null);
+  const observerRef = useRef(null);
 
   const stats = useMemo(() => {
     if (!data || data.length < 2) return null;
@@ -117,123 +113,50 @@ export default function MortgageRates({ apiUrl }) {
     };
   }, [data]);
 
-  // Animation on scroll - OPTIMIZED FOR LENIS
+  // Intersection Observer for scroll animations (only once)
   useEffect(() => {
-    if (!sectionRef.current) return;
+    if (hasAnimated || !sectionRef.current) return;
 
-    // Wait for DOM to be ready
-    const timer = setTimeout(() => {
-      const ctx = gsap.context(() => {
-        // Use will-change and force3D for GPU acceleration
-        const commonProps = {
-          force3D: true,
-          immediateRender: false
-        };
-
-        // Animate title
-        gsap.fromTo(titleRef.current,
-          { 
-            y: 50, 
-            opacity: 0, 
-            scale: 0.95,
-            ...commonProps
-          },
-          {
-            y: 0,
-            opacity: 1,
-            scale: 1,
-            duration: 1,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: 'top 80%',
-              end: 'top 20%',
-              toggleActions: 'play none none reverse',
-              // KEY FIXES FOR SMOOTH SCROLL
-              scrub: false,
-              markers: false,
-              invalidateOnRefresh: true,
-              fastScrollEnd: true,
-              preventOverlaps: true
-            },
-            ...commonProps
-          }
-        );
-
-        // Animate cards with stagger
-        cardsRef.current.forEach((card, index) => {
-          if (card) {
-            gsap.fromTo(card,
-              { 
-                y: 60, 
-                opacity: 0, 
-                scale: 0.9,
-                ...commonProps
-              },
-              {
-                y: 0,
-                opacity: 1,
-                scale: 1,
-                duration: 0.8,
-                delay: index * 0.15,
-                ease: 'back.out(1.2)',
-                scrollTrigger: {
-                  trigger: sectionRef.current,
-                  start: 'top 70%',
-                  end: 'top 20%',
-                  toggleActions: 'play none none reverse',
-                  scrub: false,
-                  invalidateOnRefresh: true,
-                  fastScrollEnd: true,
-                  preventOverlaps: true
-                },
-                ...commonProps
-              }
-            );
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !hasAnimated) {
+            setIsVisible(true);
+            setHasAnimated(true);
           }
         });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -10% 0px' }
+    );
 
-        // Animate chart container
-        gsap.fromTo(chartRef.current,
-          { 
-            opacity: 0, 
-            y: 40,
-            ...commonProps
-          },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 1,
-            delay: 0.3,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: 'top 60%',
-              end: 'top 20%',
-              toggleActions: 'play none none reverse',
-              scrub: false,
-              invalidateOnRefresh: true,
-              fastScrollEnd: true,
-              preventOverlaps: true
-            },
-            ...commonProps
-          }
-        );
-      }, sectionRef);
+    observerRef.current.observe(sectionRef.current);
 
-      return () => ctx.revert();
-    }, 100);
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasAnimated]);
 
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Refresh ScrollTrigger when data changes
+  // When the chart section becomes visible, force a resize event so Recharts can measure correctly
   useEffect(() => {
-    const timer = setTimeout(() => {
-      ScrollTrigger.refresh();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [data, range]);
+    if (!isVisible) return;
+    // Prefer calling Lenis' update if present (avoids triggering ScrollTrigger's scrollerProxy
+    // which may call scrollTop and cause an unexpected jump). Fall back to a resize event
+    // only if Lenis isn't available.
+    const t = setTimeout(() => {
+      try {
+        if (window && window.lenis && typeof window.lenis.update === 'function') {
+          window.lenis.update();
+        } else {
+          window.dispatchEvent(new Event('resize'));
+        }
+      } catch (e) {
+        // swallow errors silently
+      }
+    }, 120);
+    return () => clearTimeout(t);
+  }, [isVisible]);
 
   // Data fetching and polling
   useEffect(() => {
@@ -292,7 +215,8 @@ export default function MortgageRates({ apiUrl }) {
     {
       key: '30yr',
       label: '30-Year FRM',
-      color: '#3b82f6',
+      color: '#60a5fa',
+      lightColor: '#3b82f6',
       gradient: 'from-blue-500 to-blue-600',
       icon: <Shield className="w-5 h-5" />,
       description: 'Fixed Rate Mortgage'
@@ -300,7 +224,8 @@ export default function MortgageRates({ apiUrl }) {
     {
       key: '15yr',
       label: '15-Year FRM',
-      color: '#10b981',
+      color: '#34d399',
+      lightColor: '#10b981',
       gradient: 'from-emerald-500 to-emerald-600',
       icon: <Zap className="w-5 h-5" />,
       description: 'Shorter Term Savings'
@@ -308,50 +233,63 @@ export default function MortgageRates({ apiUrl }) {
     {
       key: '5/1',
       label: '5/1 Year ARM',
-      color: '#8b5cf6',
+      color: '#a78bfa',
+      lightColor: '#8b5cf6',
       gradient: 'from-purple-500 to-purple-600',
       icon: <Clock className="w-5 h-5" />,
       description: 'Adjustable Rate Mortgage'
     }
   ];
 
+  // Colors for dark mode
+  const textColor = darkMode ? 'text-white' : 'text-blue-900';
+  const textSecondaryColor = darkMode ? 'text-gray-300' : 'text-blue-700';
+  const bgColor = darkMode ? 'bg-gray-900' : 'bg-white';
+  const cardBgColor = darkMode ? 'bg-gray-800' : 'bg-white';
+  const borderColor = darkMode ? 'border-gray-700' : 'border-blue-100/50';
+  const buttonActiveBg = darkMode ? 'bg-blue-900' : 'bg-gradient-to-r from-blue-500 to-blue-600';
+  const buttonInactiveBg = darkMode ? 'bg-gray-800' : 'bg-blue-50';
+  const buttonActiveText = 'text-white';
+  const buttonInactiveText = darkMode ? 'text-gray-300' : 'text-blue-700';
+
   return (
     <section 
       ref={sectionRef} 
-      className="py-20 px-4 md:px-8 max-w-7xl mx-auto relative overflow-hidden"
-      style={{ willChange: 'transform' }}
+      className={` bg-transparent px-4 md:px-8 max-w-7xl mx-auto relative overflow-hidden transition-colors duration-500 ${darkMode ? 'text-white' : ''}`}
     >
-      {/* Background Effects */}
+      {/* Background Effects (removed pattern for transparent appearance) */}
       <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        
-        {/* Animated Grid Pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <svg className="w-full h-full">
-            <defs>
-              <pattern id="mortgage-grid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-                <path d="M 80 0 L 0 0 0 80" fill="none" stroke="#3b82f6" strokeWidth="1" />
-                <circle cx="40" cy="40" r="2" fill="#3b82f6" opacity="0.3" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#mortgage-grid)" />
-          </svg>
-        </div>
+        {/* Intentionally left transparent to avoid background patterns */}
       </div>
 
       {/* Header */}
       <div className="text-center mb-12">
-        <div ref={titleRef} className="inline-flex items-center gap-3 mb-4" style={{ willChange: 'transform, opacity' }}>
-          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+        <div 
+          className={`inline-flex items-center gap-3 mb-4 transition-all duration-1000 ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+          }`}
+        >
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+            darkMode ? 'bg-gradient-to-r from-blue-700 to-blue-800' : 'bg-gradient-to-r from-blue-500 to-blue-600'
+          }`}>
             <TrendingUp className="w-6 h-6 text-white" />
           </div>
           <div className="text-left">
-            <div className="text-sm font-semibold text-blue-600 uppercase tracking-wider">Market Insights</div>
-            <h2 className="text-4xl md:text-5xl font-bold text-blue-900">Mortgage Rate Trends</h2>
+            <div className={`text-sm font-semibold uppercase tracking-wider ${
+              darkMode ? 'text-blue-400' : 'text-blue-600'
+            }`}>
+              Market Insights
+            </div>
+            <h2 className={`main-heading ${textColor}`}>
+              Mortgage Rate Trends
+            </h2>
           </div>
         </div>
-        <p className="text-lg text-blue-700 max-w-2xl mx-auto">
+        <p 
+          className={`text-lg max-w-2xl mx-auto transition-all duration-1000 delay-200 ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+          } ${textSecondaryColor}`}
+        >
           Track real-time mortgage rates across different loan types. Make informed decisions with our interactive analytics.
         </p>
       </div>
@@ -361,55 +299,93 @@ export default function MortgageRates({ apiUrl }) {
         {rateCards.map((card, index) => (
           <div
             key={card.key}
-            ref={(el) => (cardsRef.current[index] = el)}
-            className="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 shadow-xl border border-blue-100/50 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 group relative overflow-hidden"
-            style={{ willChange: 'transform, opacity' }}
+            className={`rounded-2xl p-6 transition-all duration-500 hover:-translate-y-2 group relative overflow-hidden ${
+              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'
+            } ${borderColor} bg-transparent`}
+            style={{ 
+              transitionDelay: `${300 + index * 150}ms`,
+              transitionDuration: '800ms'
+            }}
           >
             {/* Background Gradient */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+            <div className={`absolute inset-0 bg-gradient-to-br ${
+              darkMode ? 'from-blue-900/20 to-purple-900/20' : card.gradient
+            } opacity-0 group-hover:opacity-${darkMode ? '10' : '5'} transition-opacity duration-500`} />
             
             {/* Animated Border */}
-            <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-blue-200 transition-all duration-500" />
+            <div className={`absolute inset-0 rounded-2xl border-2 border-transparent group-hover:${
+              darkMode ? 'border-blue-700' : 'border-blue-200'
+            } transition-all duration-500`} />
 
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 bg-gradient-to-r ${card.gradient} rounded-lg flex items-center justify-center shadow-md`}>
-                    {card.icon}
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    darkMode ? 'bg-gradient-to-r from-gray-700 to-gray-800' : `bg-gradient-to-r ${card.gradient}`
+                  }`}>
+                    {React.cloneElement(card.icon, { 
+                      className: `w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-white'}` 
+                    })}
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-blue-600">{card.label}</div>
-                    <div className="text-xs text-blue-400">{card.description}</div>
+                    <div className={`text-sm font-medium ${
+                      darkMode ? 'text-blue-400' : 'text-blue-600'
+                    }`}>
+                      {card.label}
+                    </div>
+                    <div className={`text-xs ${
+                      darkMode ? 'text-gray-400' : 'text-blue-400'
+                    }`}>
+                      {card.description}
+                    </div>
                   </div>
                 </div>
-                <div className={`w-12 h-12 rounded-full ${stats && stats[card.key]?.trend === 'up' ? 'bg-red-100' : 'bg-green-100'} flex items-center justify-center`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                  stats && stats[card.key]?.trend === 'up' 
+                    ? darkMode ? 'bg-red-900/30' : 'bg-red-100'
+                    : darkMode ? 'bg-green-900/30' : 'bg-green-100'
+                }`}>
                   {stats && stats[card.key]?.trend === 'up' ? 
-                    <TrendingUp className="w-6 h-6 text-red-500" /> : 
-                    <TrendingDown className="w-6 h-6 text-green-500" />
+                    <TrendingUp className={`w-6 h-6 ${darkMode ? 'text-red-400' : 'text-red-500'}`} /> : 
+                    <TrendingDown className={`w-6 h-6 ${darkMode ? 'text-green-400' : 'text-green-500'}`} />
                   }
                 </div>
               </div>
 
               <div className="mb-4">
-                <div className="text-4xl font-bold text-blue-900 mb-2">
+                <div className={`text-4xl font-bold mb-2 transition-all duration-300 ${
+                  darkMode ? 'text-white' : 'text-blue-900'
+                }`}>
                   {latest ? `${latest[card.key]}%` : `${DEFAULT_BASE[card.key]}%`}
                 </div>
-                <div className="text-sm text-blue-500">Current Rate</div>
+                <div className={`text-sm ${
+                  darkMode ? 'text-gray-400' : 'text-blue-500'
+                }`}>
+                  Current Rate
+                </div>
               </div>
 
               {stats && stats[card.key] && (
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
+                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
                       stats[card.key].diff >= 0 
-                        ? 'bg-red-50 text-red-700 border border-red-100' 
-                        : 'bg-green-50 text-green-700 border border-green-100'
+                        ? darkMode 
+                          ? 'bg-red-900/30 text-red-300 border border-red-800' 
+                          : 'bg-red-50 text-red-700 border border-red-100'
+                        : darkMode 
+                          ? 'bg-green-900/30 text-green-300 border border-green-800' 
+                          : 'bg-green-50 text-green-700 border border-green-100'
                     }`}>
                       {stats[card.key].diff >= 0 ? '+' : ''}{stats[card.key].diff}%
-                      <small className="opacity-70">({stats[card.key].pct >= 0 ? '+' : ''}{stats[card.key].pct}%)</small>
+                      <small className={`${darkMode ? 'opacity-70' : 'opacity-70'}`}>
+                        ({stats[card.key].pct >= 0 ? '+' : ''}{stats[card.key].pct}%)
+                      </small>
                     </div>
                   </div>
-                  <div className="text-xs text-blue-400 text-right">
+                  <div className={`text-xs text-right ${
+                    darkMode ? 'text-gray-400' : 'text-blue-400'
+                  }`}>
                     <div>Fees: 0.29 Points</div>
                     <div>APR: {latest ? `${(parseFloat(latest[card.key]) + 0.29).toFixed(2)}%` : '6.89%'}</div>
                   </div>
@@ -422,9 +398,9 @@ export default function MortgageRates({ apiUrl }) {
 
       {/* Chart Section */}
       <div 
-        ref={chartRef} 
-        className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-blue-100"
-        style={{ willChange: 'transform, opacity' }}
+        className={`rounded-3xl p-6 border transition-all duration-1000 delay-700 ${
+          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+        } ${darkMode ? 'border-gray-700 bg-transparent' : 'border-blue-100 bg-transparent'}`}
       >
         {/* Range Selector */}
         <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
@@ -432,14 +408,24 @@ export default function MortgageRates({ apiUrl }) {
             {ranges.map(r => (
               <button
                 key={r}
-                onClick={() => setRange(r)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setRange(r);
+                }}
+                type="button"
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
                   r === range 
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg scale-105' 
-                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 hover:scale-105'
+                    ? `${buttonActiveBg} ${buttonActiveText} scale-105` 
+                    : `${buttonInactiveBg} ${buttonInactiveText} hover:scale-105 ${
+                        darkMode ? 'hover:bg-gray-700' : 'hover:bg-blue-100'
+                      }`
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${r === range ? 'bg-white' : 'bg-blue-500'}`} />
+                <span className={`w-2 h-2 rounded-full ${
+                  r === range 
+                    ? 'bg-white' 
+                    : darkMode ? 'bg-gray-400' : 'bg-blue-500'
+                }`} />
                 {r}
               </button>
             ))}
@@ -448,55 +434,65 @@ export default function MortgageRates({ apiUrl }) {
           <div className="flex items-center gap-6">
             {rateCards.map(card => (
               <div key={card.key} className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: card.color }} />
-                <span className="text-sm font-medium text-blue-900">{card.label.split(' ')[0]}</span>
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: darkMode ? card.color : card.lightColor }} 
+                />
+                <span className={`text-sm font-medium ${textColor}`}>
+                  {card.label.split(' ')[0]}
+                </span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Chart */}
-        <div className="relative" style={{ height: 400 }}>
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="relative" style={{ height: 400, minHeight: 300 }}>
+          {isVisible ? (
+            <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
               <defs>
                 <linearGradient id="grad30" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
+                  <stop offset="0%" stopColor={darkMode ? '#60a5fa' : '#3b82f6'} stopOpacity={darkMode ? 0.4 : 0.2}/>
+                  <stop offset="100%" stopColor={darkMode ? '#60a5fa' : '#3b82f6'} stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="grad15" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.2}/>
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0}/>
+                  <stop offset="0%" stopColor={darkMode ? '#34d399' : '#10b981'} stopOpacity={darkMode ? 0.4 : 0.2}/>
+                  <stop offset="100%" stopColor={darkMode ? '#34d399' : '#10b981'} stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="grad51" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.2}/>
-                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0}/>
+                  <stop offset="0%" stopColor={darkMode ? '#a78bfa' : '#8b5cf6'} stopOpacity={darkMode ? 0.4 : 0.2}/>
+                  <stop offset="100%" stopColor={darkMode ? '#a78bfa' : '#8b5cf6'} stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 6" stroke="#e2e8f0" />
+              <CartesianGrid 
+                strokeDasharray="3 6" 
+                stroke={darkMode ? '#374151' : '#e2e8f0'} 
+              />
               <XAxis
                 dataKey="ts"
                 type="number"
                 scale="time"
                 domain={[dataMin => dataMin, dataMax => dataMax]}
                 tickFormatter={(ts) => formatDateLabel(ts, range)}
-                tick={{ fontSize: 12, fill: '#64748b' }}
+                tick={{ fontSize: 12, fill: darkMode ? '#9ca3af' : '#64748b' }}
                 tickCount={tickCountForRange(range)}
-                axisLine={{ stroke: '#cbd5e1' }}
+                axisLine={{ stroke: darkMode ? '#4b5563' : '#cbd5e1' }}
               />
               <YAxis 
                 domain={[dataMin => Math.floor(dataMin) - 1, dataMax => Math.ceil(dataMax) + 1]} 
                 tickFormatter={(v) => `${v}%`} 
-                tick={{ fontSize: 12, fill: '#64748b' }}
-                axisLine={{ stroke: '#cbd5e1' }}
+                tick={{ fontSize: 12, fill: darkMode ? '#9ca3af' : '#64748b' }}
+                axisLine={{ stroke: darkMode ? '#4b5563' : '#cbd5e1' }}
               />
-              <Tooltip 
+                <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(10px)',
+                  backgroundColor: darkMode ? 'rgba(17, 24, 39, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'none',
                   borderRadius: '12px',
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                  border: darkMode ? '1px solid #374151' : '1px solid #e2e8f0',
+                  boxShadow: 'none',
+                  color: darkMode ? '#f3f4f6' : '#1f2937'
                 }}
                 formatter={(value) => [`${value}%`, 'Rate']}
                 labelFormatter={(label) => `Date: ${formatDateLabel(label, range)}`}
@@ -506,21 +502,21 @@ export default function MortgageRates({ apiUrl }) {
               <Area 
                 type="monotone" 
                 dataKey="30yr" 
-                stroke="#3b82f6" 
+                stroke={darkMode ? '#60a5fa' : '#3b82f6'} 
                 fill="url(#grad30)" 
                 strokeWidth={3} 
                 dot={{ r: 0 }}
                 activeDot={{ 
                   r: 8, 
-                  stroke: '#3b82f6',
+                  stroke: darkMode ? '#60a5fa' : '#3b82f6',
                   strokeWidth: 2,
-                  fill: 'white'
+                  fill: darkMode ? '#111827' : 'white'
                 }}
               />
               <Line 
                 type="monotone" 
                 dataKey="30yr" 
-                stroke="#3b82f6" 
+                stroke={darkMode ? '#60a5fa' : '#3b82f6'} 
                 strokeWidth={2} 
                 dot={false}
                 strokeDasharray="0" 
@@ -530,21 +526,21 @@ export default function MortgageRates({ apiUrl }) {
               <Area 
                 type="monotone" 
                 dataKey="15yr" 
-                stroke="#10b981" 
+                stroke={darkMode ? '#34d399' : '#10b981'} 
                 fill="url(#grad15)" 
                 strokeWidth={3} 
                 dot={{ r: 0 }}
                 activeDot={{ 
                   r: 8, 
-                  stroke: '#10b981',
+                  stroke: darkMode ? '#34d399' : '#10b981',
                   strokeWidth: 2,
-                  fill: 'white'
+                  fill: darkMode ? '#111827' : 'white'
                 }}
               />
               <Line 
                 type="monotone" 
                 dataKey="15yr" 
-                stroke="#10b981" 
+                stroke={darkMode ? '#34d399' : '#10b981'} 
                 strokeWidth={2} 
                 dot={false}
                 strokeDasharray="0" 
@@ -554,86 +550,66 @@ export default function MortgageRates({ apiUrl }) {
               <Area 
                 type="monotone" 
                 dataKey="5/1" 
-                stroke="#8b5cf6" 
+                stroke={darkMode ? '#a78bfa' : '#8b5cf6'} 
                 fill="url(#grad51)" 
                 strokeWidth={3} 
                 dot={{ r: 0 }}
                 activeDot={{ 
                   r: 8, 
-                  stroke: '#8b5cf6',
+                  stroke: darkMode ? '#a78bfa' : '#8b5cf6',
                   strokeWidth: 2,
-                  fill: 'white'
+                  fill: darkMode ? '#111827' : 'white'
                 }}
               />
               <Line 
                 type="monotone" 
                 dataKey="5/1" 
-                stroke="#8b5cf6" 
+                stroke={darkMode ? '#a78bfa' : '#8b5cf6'} 
                 strokeWidth={2} 
                 dot={false}
                 strokeDasharray="0" 
               />
             </LineChart>
-          </ResponsiveContainer>
+            </ResponsiveContainer>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
+              Loading chart...
+            </div>
+          )}
         </div>
 
         {/* Live Update Indicator */}
-        <div className="mt-6 flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2 text-blue-600">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+        <div className="mt-6 flex items-center justify-between text-sm flex-wrap gap-4">
+          <div className={`flex items-center gap-2 ${
+            darkMode ? 'text-blue-400' : 'text-blue-600'
+          }`}>
+            <Activity className="w-4 h-4 text-green-500" />
             <span>Live updates every 20 seconds</span>
           </div>
           <button 
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
               setData(generateMockSeries(range));
             }}
-            className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-medium transition-all duration-300 hover:scale-105"
+            type="button"
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105 flex items-center gap-2 ${
+              darkMode 
+                ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' 
+                : 'bg-blue-50 hover:bg-blue-100 text-blue-700'
+            }`}
           >
+            <TrendingUp className="w-4 h-4" />
             Refresh Data
           </button>
         </div>
       </div>
 
       {/* Market Insights */}
-      <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
-            </div>
-            <h3 className="font-bold text-blue-900">Market Trend</h3>
-          </div>
-          <p className="text-blue-700 text-sm">
-            Rates have shown {stats && stats['30yr']?.trend === 'up' ? 'an upward' : 'a downward'} trend over the selected period. 
-            Consider locking rates for long-term stability.
-          </p>
-        </div>
-        
-        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl p-6 border border-emerald-200">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-              <Zap className="w-5 h-5 text-emerald-600" />
-            </div>
-            <h3 className="font-bold text-emerald-900">Quick Tip</h3>
-          </div>
-          <p className="text-emerald-700 text-sm">
-            15-year mortgages offer lower rates but higher monthly payments. 
-            ARM rates start low but can adjust after the initial period.
-          </p>
-        </div>
-        
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Shield className="w-5 h-5 text-purple-600" />
-            </div>
-            <h3 className="font-bold text-purple-900">Best Choice</h3>
-          </div>
-          <p className="text-purple-700 text-sm">
-            {stats && stats['30yr']?.trend === 'up' ? 'Consider shorter terms' : 'Long-term fixed rates'} 
-            are currently favorable based on the trend analysis and market conditions.
-          </p>
-        </div>
+      <div 
+        className={`mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 transition-all duration-1000 delay-1000 ${
+          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+        }`}
+      >
       </div>
     </section>
   );

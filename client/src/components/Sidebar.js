@@ -55,8 +55,10 @@ const Sidebar = () => {
       {/* Logo */}
       <div className="p-6 border-b border-blue-100">
         <h1 className="text-2xl font-bold">
-          <span className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 bg-clip-text text-transparent">ListWith</span>
-          <span className="text-gray-800">Leatonic</span>
+          <Link to="/" className="flex items-center gap-1">
+            <span className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 bg-clip-text text-transparent">ListWith</span>
+            <span className="text-gray-800">Leatonic</span>
+          </Link>
         </h1>
         <p className="text-gray-600 text-sm mt-1">
           {user?.role === 'admin' ? 'Admin Panel' : 'User Dashboard'}

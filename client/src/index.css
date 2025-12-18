@@ -58,3 +58,58 @@ body::before {
 h1,h2,h3,h4,h5,h6 {
   font-family: 'Onest', 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
+
+/* Main heading style to match provided design (large, uppercase, tight tracking) */
+.main-heading {
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 0.9;
+  /* responsive size: clamp from 40px up to ~88px */
+  font-size: clamp(40px, 8vw, 88px);
+  /* default light color; components can override with utility classes when needed */
+  color: var(--main-heading-color, #F5F5F5);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (max-width: 768px) {
+  .main-heading {
+    font-size: clamp(28px, 10vw, 48px);
+    letter-spacing: -0.5px;
+  }
+}
+
+/* Light-mode class for sections that should become white when active */
+.light-mode-active {
+  background-color: #ffffff !important;
+}
+.light-mode-active .main-heading {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+/* Small helper to hint the browser to promote elements to their own layer
+   and prefer transform/opacity animations for smoothness. */
+.smooth-will-change {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Reduce heavy visuals on low-end devices or when users prefer reduced motion */
+.reduced-visuals .backdrop-blur-sm,
+.reduced-visuals .backdrop-blur-md,
+.reduced-visuals .backdrop-blur-lg,
+.reduced-visuals .backdrop-blur-xl,
+.reduced-visuals .backdrop-blur-2xl {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.reduced-visuals .blur-lg,
+.reduced-visuals .blur-2xl {
+  filter: none !important;
+}
+

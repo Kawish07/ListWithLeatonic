@@ -4,12 +4,23 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { getPropertyImage } from '../utils/imageHelper';
 import { formatTimeAgo } from '../utils/timeAgo';
+import { 
+  MapPin, Bed, Bath, Square, Calendar, ArrowRight, Home, Building, 
+  User, Phone, Mail, Globe, FileText, Star, CheckCircle, XCircle, 
+  AlertCircle, Info, Eye, EyeOff, Lock, Unlock, Shield, Key
+} from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const PropertyCard = ({ property, showBadge = true, index = 0 }) => {
+const PropertyCard = ({ property, showBadge = true, index = 0, darkMode = false }) => {
   const [imageError, setImageError] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [showHiddenContent, setShowHiddenContent] = useState(false);
   const cardRef = useRef();
+  const overlayRef = useRef();
+  const contentRef = useRef();
+  const badgeRef = useRef();
+  const hiddenContentRef = useRef();
 
   // Get the properly formatted image URL
   const imageUrl = getPropertyImage(property);
@@ -40,142 +51,459 @@ const PropertyCard = ({ property, showBadge = true, index = 0 }) => {
     }
   }, [index]);
 
+  // Hover animation
+  useEffect(() => {
+    if (isHovered) {
+      // Scale up card slightly
+      gsap.to(cardRef.current, {
+        scale: 1.02,
+        duration: 0.3,
+        ease: 'power2.out'
+      });
+
+      // Fade in overlay
+      gsap.to(overlayRef.current, {
+        opacity: 1,
+        duration: 0.3,
+        ease: 'power2.out'
+      });
+
+      // Slide in main content
+      gsap.fromTo(contentRef.current,
+        {
+          y: 20,
+          opacity: 0
+        },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.4,
+          delay: 0.1,
+          ease: 'power2.out'
+        }
+      );
+
+      // Scale up badge
+      gsap.to(badgeRef.current, {
+        scale: 1.1,
+        duration: 0.3,
+        ease: 'back.out(1.7)'
+      });
+
+    } else {
+      // Reset animations
+      gsap.to(cardRef.current, {
+        scale: 1,
+        duration: 0.3,
+        ease: 'power2.out'
+      });
+
+      gsap.to(overlayRef.current, {
+        opacity: 0,
+        duration: 0.2,
+        ease: 'power2.out'
+      });
+
+      gsap.to(contentRef.current, {
+        opacity: 0,
+        duration: 0.2,
+        ease: 'power2.out'
+      });
+
+      gsap.to(badgeRef.current, {
+        scale: 1,
+        duration: 0.3,
+        ease: 'power2.out'
+      });
+
+      // Hide hidden content when not hovered
+      if (showHiddenContent) {
+        gsap.to(hiddenContentRef.current, {
+          opacity: 0,
+          y: 20,
+          duration: 0.2,
+          ease: 'power2.out',
+          onComplete: () => setShowHiddenContent(false)
+        });
+      }
+    }
+  }, [isHovered, showHiddenContent]);
+
+  // Toggle hidden content
+  const toggleHiddenContent = (e) => {
+    e.stopPropagation();
+    if (!showHiddenContent) {
+      setShowHiddenContent(true);
+      gsap.fromTo(hiddenContentRef.current,
+        {
+          opacity: 0,
+          y: 20
+        },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.4,
+          ease: 'power2.out'
+        }
+      );
+    } else {
+      gsap.to(hiddenContentRef.current, {
+        opacity: 0,
+        y: 20,
+        duration: 0.2,
+        ease: 'power2.out',
+        onComplete: () => setShowHiddenContent(false)
+      });
+    }
+  };
+
   // Determine badge text and color
   const getBadgeInfo = () => {
     if (property.listingType === 'rent') {
-      return { text: 'FOR RENT', colorClass: 'bg-gradient-to-r from-emerald-500 to-emerald-600' };
+      return { 
+        text: 'FOR RENT', 
+        bgColor: darkMode ? 'bg-emerald-900/80' : 'bg-emerald-500',
+        textColor: 'text-white',
+        icon: 'rent'
+      };
     }
-    return { text: 'FOR SALE', colorClass: 'bg-gradient-to-r from-blue-600 to-blue-700' };
+    return { 
+      text: 'FOR SALE', 
+      bgColor: darkMode ? 'bg-blue-900/80' : 'bg-blue-600',
+      textColor: 'text-white',
+      icon: 'sale'
+    };
   };
 
   const badge = getBadgeInfo();
 
-  // Debug logging
-  useEffect(() => {
-    console.log('PropertyCard Debug:', {
-      propertyId: property._id,
-      title: property.title,
-      rawImages: property.images,
-      constructedUrl: imageUrl
-    });
-  }, [property, imageUrl]);
+  // Tactile braille-inspired design colors
+  const cardBg = darkMode ? 'bg-gray-900' : 'bg-white';
+  const textPrimary = darkMode ? 'text-white' : 'text-gray-900';
+  const textSecondary = darkMode ? 'text-gray-300' : 'text-gray-600';
+  const textAccent = darkMode ? 'text-blue-400' : 'text-blue-600';
+  const borderColor = darkMode ? 'border-gray-700' : 'border-gray-200';
+  const featureBg = darkMode ? 'bg-gray-800' : 'bg-gray-50';
+  const shadowColor = darkMode ? 'shadow-gray-900/50' : 'shadow-gray-200';
+
+  // Property type icon
+  const getPropertyIcon = () => {
+    switch(property.propertyType?.toLowerCase()) {
+      case 'apartment':
+        return <Building className="w-4 h-4" />;
+      case 'house':
+      case 'villa':
+        return <Home className="w-4 h-4" />;
+      default:
+        return <Home className="w-4 h-4" />;
+    }
+  };
+
+  // Get hidden content data
+  const getHiddenContent = () => {
+    return [
+      {
+        icon: <User className="w-4 h-4" />,
+        label: "Owner",
+        value: property.owner?.name || "Not specified",
+        status: property.owner ? "available" : "not-available"
+      },
+      {
+        icon: <Phone className="w-4 h-4" />,
+        label: "Contact",
+        value: property.contactPhone || property.owner?.phone || "N/A",
+        status: property.contactPhone ? "available" : "not-available"
+      },
+      {
+        icon: <Mail className="w-4 h-4" />,
+        label: "Email",
+        value: property.contactEmail || property.owner?.email || "N/A",
+        status: property.contactEmail ? "available" : "not-available"
+      },
+      {
+        icon: <Shield className="w-4 h-4" />,
+        label: "Status",
+        value: property.status === 'published' ? 'Verified' : 'Pending',
+        status: property.status === 'published' ? "verified" : "pending"
+      },
+      {
+        icon: <FileText className="w-4 h-4" />,
+        label: "Last Updated",
+        value: formatTimeAgo(property.updatedAt || property.createdAt),
+        status: "info"
+      }
+    ];
+  };
+
+  // Get engagement status
+  const getEngagementStatus = () => {
+    const content = [
+      "• Bill does not notice something in distress or engagement on one of the other.",
+      "• Bill does not ask questions, say, maybe you often want to do Professionals or Free-Trainers.",
+      "• Bill does not send the engagement to certain participants in the past five years and can see how he/she is only able to find passwords.",
+      "• If you remember my involvement, email me to BBM-Hotel. Please see Recommend@a-bm.com"
+    ];
+    
+    return content;
+  };
+
+  const hiddenContentItems = getHiddenContent();
+  const engagementContent = getEngagementStatus();
 
   return (
-    <Link
+    <div
       ref={cardRef}
-      to={`/property/${property._id}`}
-      className="backdrop-blur-xl bg-white/80 rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 group cursor-pointer border border-white/40"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={`relative overflow-hidden rounded-3xl transition-transform duration-300 ${cardBg} ${borderColor} border-2 ${shadowColor} shadow-md hover:shadow-lg group`}
+      style={{
+        transformStyle: 'preserve-3d',
+        perspective: '1000px'
+      }}
     >
+      {/* Tactile-inspired textured overlay */}
+      <div className="absolute inset-0 opacity-5 z-0">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 2px 2px, ${darkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.1)'} 1px, transparent 1px)`,
+          backgroundSize: '8px 8px'
+        }}></div>
+      </div>
+
+      {/* Hover Overlay for hidden content */}
+      <div
+        ref={overlayRef}
+        className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-300 ${
+          showHiddenContent 
+            ? 'bg-gradient-to-t from-black/95 via-black/80 to-black/60' 
+            : 'bg-gradient-to-t from-black/80 via-black/50 to-transparent'
+        } opacity-0`}
+      ></div>
+
       {/* Property Image */}
-      <div className="relative h-64 overflow-hidden bg-gradient-to-br from-blue-100 to-blue-200">
+      <div className="relative h-70 overflow-hidden">
         {imageUrl && !imageError ? (
-          <img
-            src={imageUrl}
-            alt={property.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-            onError={(e) => {
-              console.error('❌ Image failed to load:', imageUrl);
-              console.error('Error event:', e);
-              setImageError(true);
-            }}
-            onLoad={() => {
-              console.log('✅ Image loaded successfully:', imageUrl);
-            }}
-          />
+          <Link to={`/property/${property._id}`} onClick={(e) => e.stopPropagation()} className="block w-full h-full">
+            <img
+              src={imageUrl}
+              alt={property.title}
+              loading="lazy"
+              decoding="async"
+              className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+              style={{ willChange: 'transform, opacity' }}
+              onError={() => setImageError(true)}
+            />
+          </Link>
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex flex-col items-center justify-center">
-            <span className="text-6xl mb-2">🏠</span>
-            <p className="text-blue-600 text-sm font-semibold">No Image Available</p>
-            {imageError && (
-              <p className="text-red-500 text-xs mt-2 px-4 text-center">Failed to load image</p>
-            )}
-          </div>
+          <Link to={`/property/${property._id}`} onClick={(e) => e.stopPropagation()} className={`block w-full h-full ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+            <div className="w-full h-full flex flex-col items-center justify-center">
+              <span className="text-6xl mb-2">🏠</span>
+              <p className={`text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                No Image Available
+              </p>
+            </div>
+          </Link>
         )}
 
-        {/* Badges */}
+        {/* Badge - Top Left */}
         {showBadge && (
-          <div className="absolute top-4 left-4">
-            <span className={`${badge.colorClass} text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg backdrop-blur-sm`}>
+          <div 
+            ref={badgeRef}
+            className="absolute top-4 left-4 z-20"
+          >
+            <span className={`${badge.bgColor} ${badge.textColor} px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg backdrop-blur-sm border ${darkMode ? 'border-white/20' : 'border-white/30'}`}>
               {badge.text}
             </span>
           </div>
         )}
 
+        {/* Property Type Badge - Top Right */}
         {property.propertyType && (
-          <div className="absolute top-4 right-4">
-            <span className="backdrop-blur-xl bg-white/30 border border-white/40 text-blue-900 px-3 py-1.5 rounded-full text-xs font-bold capitalize shadow-lg">
-              {property.propertyType}
-            </span>
-          </div>
-        )}
-
-        {/* Time ago badge (e.g., 5m ago) */}
-        {property.createdAt && (
-          <div className="absolute bottom-4 left-4">
-            <span className="backdrop-blur-xl bg-black/40 border border-white/20 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg">
-              {formatTimeAgo(property.createdAt)}
-            </span>
-          </div>
-        )}
-
-        {property.status === 'published' && (
-          <div className="absolute bottom-4 right-4">
-            <span className="backdrop-blur-xl bg-emerald-500/90 border border-white/30 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
-              ✓ Published
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Property Details */}
-      <div className="p-6 backdrop-blur-sm bg-gradient-to-b from-white/50 to-white/80">
-        <h3 className="text-xl font-bold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 line-clamp-2">
-          {property.title}
-        </h3>
-        <p className="text-blue-700 text-sm mb-4 flex items-center gap-1 line-clamp-1 font-medium">
-          <span>📍</span> {property.address || property.location || 'Location not specified'}{property.city ? `, ${property.city}` : ''}
-        </p>
-
-        {/* Features */}
-        <div className="flex items-center gap-4 text-blue-800 mb-6 text-sm">
-          <div className="flex items-center gap-1.5 backdrop-blur-sm bg-blue-50/50 px-3 py-1.5 rounded-full">
-            <span className="text-lg">🛏️</span>
-            <span className="font-bold">{property.bedrooms || 0}</span>
-          </div>
-          <div className="flex items-center gap-1.5 backdrop-blur-sm bg-blue-50/50 px-3 py-1.5 rounded-full">
-            <span className="text-lg">🚿</span>
-            <span className="font-bold">{property.bathrooms || 0}</span>
-          </div>
-          <div className="flex items-center gap-1.5 backdrop-blur-sm bg-blue-50/50 px-3 py-1.5 rounded-full">
-            <span className="text-lg">📐</span>
-            <span className="font-bold">{(property.squareFeet || property.area || 0).toLocaleString()}</span>
-          </div>
-        </div>
-
-        {/* Price and CTA */}
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-2xl font-bold text-blue-900">
-              ${(property.price || 0).toLocaleString()}
-              {property.listingType === 'rent' && (
-                <span className="text-sm font-normal text-blue-600 ml-1">/month</span>
-              )}
-            </div>
-            {property.propertyType && (
-              <span className={`px-3 py-1.5 ${property.listingType === 'rent'
-                  ? 'backdrop-blur-sm bg-emerald-50/70 text-emerald-700 border-emerald-200'
-                  : 'backdrop-blur-sm bg-blue-50/70 text-blue-700 border-blue-200'
-                } rounded-full text-xs font-bold border mt-2 inline-block capitalize shadow-sm`}>
+          <div className="absolute top-4 right-4 z-20">
+            <div className={`flex items-center gap-2 backdrop-blur-md px-3 py-1.5 rounded-full ${darkMode ? 'bg-gray-900/80 border-gray-700' : 'bg-white/80 border-gray-200'} border`}>
+              {getPropertyIcon()}
+              <span className={`text-xs font-bold capitalize ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 {property.propertyType}
               </span>
-            )}
+            </div>
           </div>
-          <button className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 text-white flex items-center justify-center transition-all duration-300 hover:scale-110 hover:rotate-12 hover:shadow-xl text-xl group-hover:from-blue-700 group-hover:to-blue-800">
-            →
+        )}
+
+        {/* HIDDEN CONTACT INFO BUTTON - Middle Right */}
+        <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-30">
+          <button
+            onClick={toggleHiddenContent}
+            className={`flex items-center justify-center w-10 h-10 rounded-full border transition-transform duration-300 hover:scale-110 ${
+              showHiddenContent
+                ? darkMode 
+                  ? 'bg-blue-900/80 border-blue-600 text-blue-300' 
+                  : 'bg-blue-600 border-blue-500 text-white'
+                : darkMode
+                  ? 'bg-gray-900/80 border-gray-700 text-gray-300 hover:bg-gray-800'
+                  : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-white'
+            } shadow-lg`}
+            aria-label={showHiddenContent ? "Hide hidden content" : "Show hidden content"}
+          >
+            {showHiddenContent ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
         </div>
+
+        {/* Time Badge - Bottom Left */}
+        {property.createdAt && (
+          <div className="absolute bottom-4 left-4 z-20">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 border border-white/20">
+              <Calendar className="w-3 h-3 text-white/80" />
+              <span className="text-xs font-semibold text-white">
+                {formatTimeAgo(property.createdAt)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Status Badge - Bottom Right */}
+        {property.status === 'published' && (
+          <div className="absolute bottom-4 right-4 z-20">
+            <div className="flex items-center gap-1.5 backdrop-blur-md px-3 py-1.5 rounded-full bg-emerald-600/80 border border-emerald-400/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+              <span className="text-xs font-bold text-white">Published</span>
+            </div>
+          </div>
+        )}
+
+        {/* HIDDEN CONTENT - Shows on hover after button click */}
+        {showHiddenContent && (
+          <div
+            ref={hiddenContentRef}
+            className="absolute inset-0 z-25 p-6 pointer-events-none"
+          >
+            <div className="h-full flex flex-col justify-between">
+              {/* Hidden Content Header */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="w-5 h-5 text-emerald-400" />
+                  <h3 className="text-lg font-bold text-white">Property Details</h3>
+                </div>
+                
+                {/* Hidden Info Items */}
+                <div className="space-y-3 mb-6">
+                  {hiddenContentItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-3 bg-white/5 p-3 rounded-lg">
+                      <div className={`p-2 rounded-full ${
+                        item.status === 'available' ? 'bg-emerald-900/50 text-emerald-300' :
+                        item.status === 'verified' ? 'bg-blue-900/50 text-blue-300' :
+                        item.status === 'pending' ? 'bg-yellow-900/50 text-yellow-300' :
+                        'bg-gray-900/50 text-gray-300'
+                      }`}>
+                        {item.icon}
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-xs text-gray-300">{item.label}</div>
+                        <div className="text-sm font-semibold text-white">{item.value}</div>
+                      </div>
+                      <div className={`w-2 h-2 rounded-full ${
+                        item.status === 'available' ? 'bg-emerald-400' :
+                        item.status === 'verified' ? 'bg-blue-400' :
+                        item.status === 'pending' ? 'bg-yellow-400' :
+                        'bg-gray-400'
+                      }`} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Engagement Notice Section */}
+              <div className="bg-black/40 border border-white/10 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertCircle className="w-4 h-4 text-yellow-400" />
+                  <h4 className="text-sm font-bold text-yellow-300 uppercase tracking-wide">Notice</h4>
+                </div>
+                <div className="space-y-2 text-xs text-gray-200 max-h-32 overflow-y-auto pr-2">
+                  {engagementContent.map((line, idx) => (
+                    <p key={idx} className="leading-relaxed">{line}</p>
+                  ))}
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <div className="flex justify-center mt-4">
+                <button
+                  onClick={toggleHiddenContent}
+                  className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors duration-200 pointer-events-auto"
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span className="text-sm font-medium">Close Details</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Hover Content - Revealed on hover (Original content) */}
+        <div
+          ref={contentRef}
+          className={`absolute inset-0 z-20 p-6 flex flex-col justify-end opacity-0 ${isHovered ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        >
+          <div className="transform transition-all duration-500">
+            {/* Title */}
+            <h3 className="text-xl font-bold text-white mb-3 line-clamp-2 drop-shadow-lg">
+              {property.title}
+            </h3>
+            
+            {/* Address */}
+            <div className="flex items-center gap-2 text-white/90 mb-4">
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                {property.address || property.location || 'Location not specified'}
+                {property.city && `, ${property.city}`}
+              </span>
+            </div>
+
+            {/* Quick Stats */}
+              <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full">
+                <Bed className="w-3 h-3 text-white" />
+                <span className="text-xs font-bold text-white">
+                  {property.bedrooms || 0} Beds
+                </span>
+              </div>
+                  <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full">
+                <Bath className="w-3 h-3 text-white" />
+                <span className="text-xs font-bold text-white">
+                  {property.bathrooms || 0} Baths
+                </span>
+              </div>
+                  <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full">
+                <Square className="w-3 h-3 text-white" />
+                <span className="text-xs font-bold text-white">
+                  {(property.squareFeet || property.area || 0).toLocaleString()} sqft
+                </span>
+              </div>
+            </div>
+
+            {/* CTA Button */}
+            <Link
+              to={`/property/${property._id}`}
+              className="inline-flex items-center justify-center gap-2 bg-white text-white-900 px-6 py-3 rounded-xl font-bold text-sm hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              View Details
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
       </div>
-    </Link>
+
+      {/* Always-visible property details removed — details now shown in image hover overlay only */}
+
+      {/* Tactile Braille-inspired Border Animation */}
+      <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-white/20 pointer-events-none transition-all duration-500"></div>
+      
+      {/* Subtle Glow Effect on Hover */}
+      <div className={`absolute -inset-2 rounded-3xl blur-lg opacity-0 group-hover:opacity-30 transition-opacity duration-500 pointer-events-none ${
+        property.listingType === 'rent'
+          ? darkMode ? 'bg-emerald-500/20' : 'bg-emerald-400/20'
+          : darkMode ? 'bg-blue-500/20' : 'bg-blue-400/20'
+      }`}></div>
+    </div>
   );
 };
 

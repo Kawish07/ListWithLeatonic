@@ -5,6 +5,14 @@ import { Provider } from 'react-redux';
 import store from './store/store';
 import App from './App';
 import './index.css';
+// Dev-only: enable overflow mutation logging to track accidental body/html locks
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    // lazy import to avoid bundling into production
+    const { enableOverflowLogger } = require('./utils/overflowLogger');
+    enableOverflowLogger();
+  } catch (e) {}
+}
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

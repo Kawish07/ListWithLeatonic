@@ -1,29 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
+// Removed Lenis instance to avoid conflicting smooth-scroll instances
 
 const Footer = () => {
     const footerRef = useRef(null);
     const [scale, setScale] = useState(1);
     const [opacity, setOpacity] = useState(1);
-
+    // Use a simple window scroll listener instead of a second Lenis instance
     useEffect(() => {
         const handleScroll = () => {
             if (!footerRef.current) return;
 
             const footer = footerRef.current;
             const rect = footer.getBoundingClientRect();
-            const windowHeight = window.innerHeight;
-            
-            // When footer enters viewport
+            const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+
             if (rect.top < windowHeight && rect.bottom > 0) {
-                // Calculate how much of footer is visible
                 const visibleHeight = Math.min(rect.bottom, windowHeight) - Math.max(rect.top, 0);
                 const progress = visibleHeight / windowHeight;
-                
-                // Scale from 1 to 1.3 (much smaller scale)
                 const newScale = 1 + (progress * 0.3);
                 setScale(Math.min(newScale, 1.3));
-                
-                // Fade in large text
                 setOpacity(Math.min(progress * 2, 1));
             } else {
                 setScale(1);
@@ -32,9 +27,43 @@ const Footer = () => {
         };
 
         window.addEventListener('scroll', handleScroll, { passive: true });
+        window.addEventListener('resize', handleScroll);
         handleScroll();
 
-        return () => window.removeEventListener('scroll', handleScroll);
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('resize', handleScroll);
+        };
+    }, []);
+
+    // Prevent horizontal scrollbar while footer is visible by hiding overflow-x
+    // Save/restore previous value so we don't stomp other code
+    useEffect(() => {
+        if (!footerRef.current) return;
+        if (!('IntersectionObserver' in window)) return;
+
+        const el = footerRef.current;
+        const prevRef = { current: '' };
+
+        const obs = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    try {
+                        // Save previous only once
+                        if (!prevRef.current) prevRef.current = document.documentElement.style.overflowX || '';
+                    } catch (e) { prevRef.current = ''; }
+                    try { document.documentElement.style.overflowX = 'hidden'; } catch (e) { }
+                } else {
+                    try { document.documentElement.style.overflowX = prevRef.current || ''; } catch (e) { }
+                }
+            });
+        }, { threshold: 0 });
+
+        obs.observe(el);
+        return () => {
+            obs.disconnect();
+            try { document.documentElement.style.overflowX = prevRef.current || ''; } catch (e) { }
+        };
     }, []);
 
     return (
@@ -47,8 +76,8 @@ const Footer = () => {
                 transformOrigin: 'center center',
                 transition: 'transform 0.3s ease-out',
                 background: 'rgba(0, 0, 0, 0.95)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
+                zIndex: 60,
+                /* removed backdrop-filter for cross-browser performance */
             }}
         >
             {/* Animated Background Pattern */}
@@ -64,14 +93,20 @@ const Footer = () => {
                         backgroundSize: '80px 80px'
                     }}
                 ></div>
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#6366f1]/3 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#4f46e5]/3 rounded-full blur-3xl"></div>
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#6366f1]/3 rounded-full blur-2xl"></div>
+                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#4f46e5]/3 rounded-full blur-2xl"></div>
             </div>
 
-            <div className="relative z-10 h-full flex flex-col justify-between">
-                {/* Large Brand Name - Bottom */}
-                <div className="relative z-20 w-full flex justify-center mb-6">
-                    <h1 className="font-black tracking-tighter text-white leading-none text-[6vw] md:text-[4.5vw] lg:text-[3.5vw]">
+            <div className="relative z-10 h-full flex flex-col">
+                {/* Large Brand Name - Top */}
+                <div className="relative z-20 w-full flex justify-center pt-12 pb-8">
+                    <h1 
+                        className="font-black tracking-tighter text-white leading-none text-[6vw] md:text-[4.5vw] lg:text-[3.5vw]"
+                        style={{
+                            opacity: opacity,
+                            transition: 'opacity 0.3s ease-out'
+                        }}
+                    >
                         LISTWITH<span className="text-blue-600">LEATONIC</span>
                     </h1>
                 </div>
@@ -85,11 +120,11 @@ const Footer = () => {
                                 <a href="/">
                                     <div className="flex items-center gap-3 mb-3 group ms-9">
                                         <div className="w-9 h-9 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
-                                            <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
-                                                <path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" />
-                                            </svg>
+                                            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                                    <path d="M12 3.2l8 5.2v10.6a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1V8.4l8-5.2zM12 5.1 6 9v9h3v-6h6v6h3V9l-6-3.9z" />
+                                </svg>
                                         </div>
-                                        <span className="text-sm font-bold bg-gradient-to-r from-[#10b981] via-[#22d3ee] to-[#6366f1] bg-clip-text text-transparent">
+                                        <span className="text-sm font-bold text-white">
                                             ListWithLeatonic
                                         </span>
                                     </div>
@@ -123,7 +158,7 @@ const Footer = () => {
                             <div>
                                 <h3 className="font-bold text-sm mb-3 text-white">Company</h3>
                                 <ul className="space-y-1.5">
-                                    {['About Us', 'Careers', 'Press', 'Blog'].map((item) => (
+                                    {['About Us', 'Rent', 'Sell', 'Buy'].map((item) => (
                                         <li key={item}>
                                             <a
                                                 href={`/${item.toLowerCase().replace(' ', '-')}`}

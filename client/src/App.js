@@ -13,6 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Sidebar from './components/Sidebar';
 import LoadingSpinner from './components/LoadingSpinner';
+import RouteLoaderOverlay from './components/RouteLoaderOverlay';
 
 // Public Pages
 import HomePage from './pages/HomePage';
@@ -23,6 +24,8 @@ import SignInPage from './pages/SignInPage';
 import SignUpPage from './pages/SignUpPage';
 import ContactUsPage from './pages/ContactUsPage';
 import LocationPage from './pages/LocationPage';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
 
 // User Pages
 import UserDashboardPage from './pages/user/UserDashboardPage';
@@ -47,14 +50,18 @@ import HeroSection from './components/HeroSection';
 import ToastContainer from './components/ToastContainer';
 import ConfirmContainer from './components/ConfirmContainer';
 import ScrollToTopOnRouteChange from './components/ScrollToTopOnRouteChange';
+import usePerformanceHints from './hooks/usePerformance';
 
 // Main App Component
 function AppContent() {
+  // Initialize performance hints early so DOM class/attributes are set
+  usePerformanceHints();
   const [isInitialized, setIsInitialized] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, checkAuth, isLoading } = useAuthStore();
   const lenisRef = React.useRef(null);
+  const [routeLoading, setRouteLoading] = useState(false);
 
   useEffect(() => {
     // Register GSAP plugins and initialize smooth scroll once
@@ -81,7 +88,15 @@ function AppContent() {
           scrollTop(value) {
             if (arguments.length) {
               // when ScrollTrigger wants to set the scroll, use Lenis
-              try { lenis.scrollTo(value); } catch (e) {}
+              try {
+                const currentY = (lenis && lenis.scroll && lenis.scroll.instance && lenis.scroll.instance.scroll && typeof lenis.scroll.instance.scroll.y === 'number')
+                  ? lenis.scroll.instance.scroll.y
+                  : (document.scrollingElement && document.scrollingElement.scrollTop) || 0;
+                // Only call scrollTo if the requested value differs meaningfully from the current position
+                if (typeof value === 'number' && Math.abs(value - currentY) > 2) {
+                  lenis.scrollTo(value);
+                }
+              } catch (e) {}
             }
             // return current scroll position
             return (lenis && lenis.scroll && lenis.scroll.instance && lenis.scroll.instance.scroll && typeof lenis.scroll.instance.scroll.y === 'number')
@@ -167,13 +182,22 @@ function AppContent() {
   }, [checkAuth]);
 
   // NOTE: route-change scrolling is handled by `ScrollToTopOnRouteChange` component
+  // Show a short full-screen loader on route changes
+  useEffect(() => {
+    // skip showing loader on very first render until initialized
+    if (!isInitialized) return;
+    setRouteLoading(true);
+    const timer = setTimeout(() => setRouteLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
 
   if (isLoading || !isInitialized) {
-    return <LoadingSpinner />;
+    return <RouteLoaderOverlay visible={true} />;
   }
 
   return (
     <div className="min-h-screen bg-transparent text-black flex flex-col">
+      <RouteLoaderOverlay visible={routeLoading} />
       <ScrollToTopOnRouteChange />
       <ToastContainer />
       <ConfirmContainer />
@@ -242,6 +266,23 @@ function AppContent() {
               <ContactUsPage />
             </main>
             <Footer />
+          </>
+        } />
+
+        <Route path="/privacy" element={
+          <>
+            <main className="flex-1">
+              <HeroSection />
+              <PrivacyPage />
+            </main>
+          </>
+        } />
+        <Route path="/terms" element={
+          <>
+            <main className="flex-1">
+              <HeroSection />
+              <TermsPage />
+            </main>
           </>
         } />
         

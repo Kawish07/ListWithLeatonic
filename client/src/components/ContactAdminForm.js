@@ -36,6 +36,7 @@ const ContactAdminForm = ({ initialName = '', initialEmail = '' }) => {
 
   return (
     <div className="mt-8 bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-white/50">
+      <div className="mt-8 bg-white/90 rounded-2xl shadow-md p-6 border border-white/50">
       <div className="flex items-center gap-3 mb-4">
         <div className="p-3 bg-gradient-to-r from-sky-500 to-blue-500 rounded-xl">
           <FiMail className="w-6 h-6 text-white" />
@@ -47,7 +48,7 @@ const ContactAdminForm = ({ initialName = '', initialEmail = '' }) => {
       </div>
 
       {result && (
-        <div className={`mb-6 p-4 rounded-xl backdrop-blur-md border flex items-center gap-3 ${
+        <div className={`mb-6 p-4 rounded-xl border flex items-center gap-3 ${
           result.success 
             ? 'bg-emerald-500/10 border-emerald-200/50 text-emerald-800' 
             : 'bg-rose-500/10 border-rose-200/50 text-rose-800'
@@ -66,7 +67,7 @@ const ContactAdminForm = ({ initialName = '', initialEmail = '' }) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
-              className="w-full pl-10 pr-4 py-3 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-300"
+              className="w-full pl-10 pr-4 py-3 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/60 transition-transform duration-300"
               required
             />
           </div>
@@ -78,7 +79,7 @@ const ContactAdminForm = ({ initialName = '', initialEmail = '' }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email"
-              className="w-full pl-10 pr-4 py-3 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-300"
+              className="w-full pl-10 pr-4 py-3 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/60 transition-transform duration-300"
               required
             />
           </div>
@@ -91,7 +92,7 @@ const ContactAdminForm = ({ initialName = '', initialEmail = '' }) => {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="Phone (optional)"
-            className="w-full pl-10 pr-4 py-3 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-300"
+            className="w-full pl-10 pr-4 py-3 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/60 transition-transform duration-300"
           />
         </div>
 
@@ -102,7 +103,7 @@ const ContactAdminForm = ({ initialName = '', initialEmail = '' }) => {
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Subject"
-            className="w-full pl-10 pr-4 py-3 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-300"
+            className="w-full pl-10 pr-4 py-3 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/60 transition-transform duration-300"
           />
         </div>
 
@@ -112,7 +113,7 @@ const ContactAdminForm = ({ initialName = '', initialEmail = '' }) => {
             onChange={(e) => setMessage(e.target.value)}
             placeholder="How can we help you?"
             rows={5}
-            className="w-full px-4 py-3 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/50 backdrop-blur-sm transition-all duration-300 resize-none"
+            className="w-full px-4 py-3 border border-blue-200/50 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/60 transition-transform duration-300 resize-none"
             required
           />
           <div className="absolute bottom-3 right-3 text-blue-400 text-sm">
@@ -124,7 +125,7 @@ const ContactAdminForm = ({ initialName = '', initialEmail = '' }) => {
           <button
             type="submit"
             disabled={sending}
-            className="px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-500 text-white rounded-xl hover:from-sky-600 hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+            className="px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-500 text-white rounded-xl hover:from-sky-600 hover:to-blue-600 transition-transform duration-300 shadow-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {sending ? (
               <>
@@ -142,6 +143,7 @@ const ContactAdminForm = ({ initialName = '', initialEmail = '' }) => {
         </div>
       </form>
     </div>
+  </div>
   );
 };
 
