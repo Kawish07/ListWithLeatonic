@@ -116,7 +116,7 @@ const PopularLocations = ({ darkMode = false, lightMode = false }) => {
     };
   }, []);
 
-  // Light mode enforcement
+  // Light mode enforcement (but keep section background transparent)
   useEffect(() => {
     try {
       if (lightMode) {
@@ -124,14 +124,15 @@ const PopularLocations = ({ darkMode = false, lightMode = false }) => {
           titleRef.current.style.setProperty('color', '#000000ff', 'important');
         }
         if (sectionRef.current) {
-          sectionRef.current.style.setProperty('background-color', '#ffffff', 'important');
+          // keep the section transparent so parent background shows through
+          sectionRef.current.style.setProperty('background-color', 'transparent', 'important');
         }
       } else {
         if (titleRef.current) {
           titleRef.current.style.removeProperty('color');
         }
         if (sectionRef.current) {
-          sectionRef.current.style.removeProperty('background-color');
+          sectionRef.current.style.setProperty('background-color', 'transparent', 'important');
         }
       }
     } catch (e) {
@@ -204,25 +205,39 @@ const PopularLocations = ({ darkMode = false, lightMode = false }) => {
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
+      /* Performance-focused rules to reduce repaint/jank on scroll */
       .popular-locations-section {
         transform-style: preserve-3d;
         perspective: 1000px;
+        will-change: transform, opacity, background-color;
+        contain: paint;
+        -webkit-transform: translateZ(0);
       }
       
       .smooth-parallax {
-        will-change: transform;
+        will-change: opacity, transform, background;
         transform: translateZ(0);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
       }
       
       .location-card {
         transform-style: preserve-3d;
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
+        will-change: transform, opacity;
+      }
+      
+      .location-card img {
+        will-change: transform, opacity;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        transform: translateZ(0);
       }
       
       .hover-3d-effect {
-        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-                    box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                    box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         will-change: transform;
       }
       
@@ -231,8 +246,8 @@ const PopularLocations = ({ darkMode = false, lightMode = false }) => {
       }
       
       .glass-effect {
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         transform: translateZ(0);
       }
       
@@ -258,11 +273,11 @@ const PopularLocations = ({ darkMode = false, lightMode = false }) => {
       className={`popular-locations-section min-h-screen relative overflow-hidden transition-colors duration-700`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={{ willChange: 'background-color', backgroundColor: effectiveDark ? '#000000' : '#ffffff' }}
+      style={{ willChange: 'background-color', backgroundColor: 'transparent' }}
     >
       <div className="h-full">
         {/* Background with Map Image */}
-        <div ref={mapRef} className={`absolute inset-0 smooth-parallax transition-colors duration-700`} style={{ willChange: 'background' }}>
+        <div ref={mapRef} className={`absolute inset-0 smooth-parallax`} style={{ willChange: 'opacity, transform, background', transition: 'opacity 0.6s cubic-bezier(0.4,0,0.2,1), transform 0.6s cubic-bezier(0.4,0,0.2,1)' }}>
           {/* Map Image Background */}
           <div
             className="absolute mt-[50px] inset-0 bg-center bg-no-repeat"

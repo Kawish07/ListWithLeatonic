@@ -12,6 +12,17 @@ export const useSmoothScroll = (options = {}) => {
   const { isLowEnd } = usePerformanceHints();
 
   useEffect(() => {
+    // If an app-level Lenis is already present (e.g. created in App.js), reuse it
+    if (typeof window !== 'undefined' && window.lenis) {
+      lenisRef.current = window.lenis;
+      try { lenisRef.current.on && lenisRef.current.on('scroll', ScrollTrigger.update); } catch (e) {}
+
+      // We don't manage the RAF loop or destroy a shared Lenis instance
+      return () => {
+        try { lenisRef.current.off && lenisRef.current.off('scroll', ScrollTrigger.update); } catch (e) {}
+        lenisRef.current = null;
+      };
+    }
 
     // Initialize Lenis; for low-end devices prefer reduced smoothing
     const lenisOptions = {

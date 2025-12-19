@@ -12,6 +12,7 @@ import AdminPropertiesPage from './pages/PropertiesPage';
 import AdminUsersPage from './pages/UsersPage';
 import AdminClientsPage from './pages/ClientsPage';
 import AdminLeadsPage from './pages/LeadsPage';
+import DiscountsPage from './pages/DiscountsPage';
 import AdvancedSearchPage from './pages/AdvancedSearchPage';
 import SignInPage from './pages/SignInPage';
 import SignUpPage from './pages/SignUpPage';
@@ -50,6 +51,7 @@ function AdminApp() {
           <Route path="/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
           <Route path="/clients" element={<AdminRoute><AdminClientsPage /></AdminRoute>} />
           <Route path="/leads" element={<AdminRoute><AdminLeadsPage /></AdminRoute>} />
+          <Route path="/discounts" element={<AdminRoute><DiscountsPage /></AdminRoute>} />
           <Route path="/search" element={<AdminRoute><AdvancedSearchPage /></AdminRoute>} />
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Routes>

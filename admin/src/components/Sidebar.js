@@ -17,6 +17,7 @@ import {
   FiUser,
   FiPieChart,
   FiBarChart2,
+  FiCreditCard,
   FiCalendar
 } from 'react-icons/fi';
 // import { useAuthStore } from '../store/authStore';
@@ -33,6 +34,7 @@ const AdminSidebar = () => {
     { path: '/admin/users', label: 'Users', icon: <FiUser /> },
     { path: '/admin/revenue', label: 'Revenue', icon: <FiDollarSign /> },
     { path: '/admin/search', label: 'Advanced Search', icon: <FiSearch /> },
+    // Control Center group header will be shown below as a section
     { path: '/admin/settings', label: 'Settings', icon: <FiSettings /> },
     // Add a compact logout item so collapsed sidebars still show a logout icon
     { path: '/logout', label: 'Logout', icon: <FiLogOut />, isAction: true }
@@ -105,6 +107,20 @@ const AdminSidebar = () => {
               )}
             </li>
           ))}
+
+          {/* Control Center section */}
+          <li className="mt-4">
+            <div className="px-4 py-2 text-xs text-gray-500 uppercase">Control Center</div>
+            <Link
+              to="/admin/discounts"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                location.pathname === '/admin/discounts' ? 'bg-[#2c43f5] text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+              }`}
+            >
+              <span className="text-lg"><FiCreditCard /></span>
+              <span className="font-medium">Discounts</span>
+            </Link>
+          </li>
         </ul>
       </nav>
 

@@ -4,6 +4,7 @@ import Property from '../models/Property.js';
 import User from '../models/User.js';
 import Lead from '../models/Lead.js';
 import Client from '../models/Client.js';
+import Coupon from '../models/Coupon.js';
 
 const router = express.Router();
 
@@ -404,6 +405,76 @@ router.get('/dashboard/recent-activities', async (req, res) => {
   } catch (error) {
     console.error('Error fetching recent activities:', error);
     res.status(500).json([]);
+  }
+});
+
+// Coupons - list & create
+// GET /api/admin/coupons?limit=50
+router.get('/coupons', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit || '100', 10), 1000);
+    const coupons = await Coupon.find().sort({ createdAt: -1 }).limit(limit);
+    res.json({ success: true, coupons });
+  } catch (error) {
+    console.error('Error fetching coupons:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/admin/coupons - generate a coupon code and save
+router.post('/coupons', async (req, res) => {
+  try {
+    const { title, planName, price, durationMinutes, planDuration, referralFee, paymentLink } = req.body;
+    if (!title || !planName || !price || !durationMinutes || !planDuration || !referralFee || !paymentLink) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    // Generate unique code
+    const makeCode = (len = 10) => {
+      const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+      let s = '';
+      for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      return s;
+    };
+
+    let code = makeCode(10);
+    // ensure uniqueness (small loop)
+    for (let i = 0; i < 6; i++) {
+      const exists = await Coupon.findOne({ code });
+      if (!exists) break;
+      code = makeCode(10 + i);
+    }
+
+    const c = new Coupon({
+      title,
+      planName,
+      price: Number(price),
+      durationMinutes: Number(durationMinutes),
+      planDuration,
+      referralFee: Number(referralFee),
+      paymentLink,
+      code,
+      createdBy: req.user?._id || null
+    });
+
+    await c.save();
+    res.json({ success: true, coupon: c });
+  } catch (error) {
+    console.error('Error creating coupon:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE /api/admin/coupons/:id - remove a coupon
+router.delete('/coupons/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const removed = await Coupon.findByIdAndDelete(id);
+    if (!removed) return res.status(404).json({ success: false, message: 'Coupon not found' });
+    res.json({ success: true, message: 'Coupon deleted', coupon: removed });
+  } catch (error) {
+    console.error('Error deleting coupon:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

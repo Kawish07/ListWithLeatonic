@@ -20,7 +20,7 @@
 
 /* Beautiful Background Pattern */
 body {
-  background-color: #f8fafc;
+  background-color: #EAECF9;
   min-height: 100vh;
   /* Default UI font; headings will prefer 'Onest' if available */
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
@@ -71,6 +71,7 @@ h1,h2,h3,h4,h5,h6 {
   color: var(--main-heading-color, #F5F5F5);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: color 700ms ease-in-out, -webkit-text-fill-color 700ms ease-in-out;
 }
 
 @media (max-width: 768px) {
@@ -87,6 +88,11 @@ h1,h2,h3,h4,h5,h6 {
 .light-mode-active .main-heading {
   color: #0f172a !important;
   -webkit-text-fill-color: #0f172a !important;
+}
+
+/* Small helper class to smoothly transition text color on theme/section changes */
+.heading-transition {
+  transition: color 700ms ease-in-out, -webkit-text-fill-color 700ms ease-in-out;
 }
 
 /* Small helper to hint the browser to promote elements to their own layer

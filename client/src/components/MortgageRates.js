@@ -94,6 +94,9 @@ export default function MortgageRates({ apiUrl, darkMode = false }) {
   const pollingRef = useRef(null);
   const sectionRef = useRef(null);
   const observerRef = useRef(null);
+  const chartContainerRef = useRef(null);
+  const [chartReady, setChartReady] = useState(false);
+  const [chartMountReady, setChartMountReady] = useState(false);
 
   const stats = useMemo(() => {
     if (!data || data.length < 2) return null;
@@ -157,6 +160,55 @@ export default function MortgageRates({ apiUrl, darkMode = false }) {
     }, 120);
     return () => clearTimeout(t);
   }, [isVisible]);
+
+  // Determine if chart container has non-zero size before rendering Recharts
+  useEffect(() => {
+    const checkSize = () => {
+      const el = chartContainerRef.current;
+      if (!el) return setChartReady(false);
+      const w = el.clientWidth || el.offsetWidth;
+      const h = el.clientHeight || el.offsetHeight;
+      setChartReady(Boolean(w > 0 && h > 0));
+    };
+
+    checkSize();
+    const ro = new ResizeObserver(() => checkSize());
+    if (chartContainerRef.current) ro.observe(chartContainerRef.current);
+    window.addEventListener('resize', checkSize);
+    const t = setInterval(checkSize, 300);
+
+    return () => {
+      clearInterval(t);
+      window.removeEventListener('resize', checkSize);
+      try { ro.disconnect(); } catch (e) {}
+    };
+  }, []);
+
+  // Only mount the Recharts ResponsiveContainer after chartReady and isVisible
+  useEffect(() => {
+    let t = null;
+    const tryMount = () => {
+      const el = chartContainerRef.current;
+      if (!el) return setChartMountReady(false);
+      const rect = el.getBoundingClientRect();
+      const hasSize = rect.width > 0 && rect.height > 0;
+      if (chartReady && isVisible && hasSize) {
+        // give the layout a short moment to stabilize
+        t = setTimeout(() => setChartMountReady(true), 120);
+      } else {
+        setChartMountReady(false);
+      }
+    };
+
+    tryMount();
+    // also try again after a short delay in case layout is still stabilizing
+    const retry = setTimeout(tryMount, 250);
+
+    return () => {
+      if (t) clearTimeout(t);
+      clearTimeout(retry);
+    };
+  }, [chartReady, isVisible]);
 
   // Data fetching and polling
   useEffect(() => {
@@ -255,7 +307,7 @@ export default function MortgageRates({ apiUrl, darkMode = false }) {
   return (
     <section 
       ref={sectionRef} 
-      className={` bg-transparent px-4 md:px-8 max-w-7xl mx-auto relative overflow-hidden transition-colors duration-500 ${darkMode ? 'text-white' : ''}`}
+      className={`px-4 md:px-8 max-w-7xl mx-auto relative overflow-hidden transition-colors duration-700 ${darkMode ? 'text-white' : ''}`}
     >
       {/* Background Effects (removed pattern for transparent appearance) */}
       <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -447,8 +499,8 @@ export default function MortgageRates({ apiUrl, darkMode = false }) {
         </div>
 
         {/* Chart */}
-        <div className="relative" style={{ height: 400, minHeight: 300 }}>
-          {isVisible ? (
+        <div ref={chartContainerRef} className="relative" style={{ height: 400, minHeight: 300, minWidth: 0 }}>
+          {chartMountReady ? (
             <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
               <defs>
@@ -606,7 +658,7 @@ export default function MortgageRates({ apiUrl, darkMode = false }) {
 
       {/* Market Insights */}
       <div 
-        className={`mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 transition-all duration-1000 delay-1000 ${
+        className={`mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 transition-all duration-1000 delay-700 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
         }`}
       >

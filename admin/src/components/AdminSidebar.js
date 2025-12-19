@@ -16,6 +16,7 @@ import {
   FiLogOut,
   FiUser,
   FiPieChart,
+  FiCreditCard,
   FiBarChart2,
   FiCalendar
 } from 'react-icons/fi';
@@ -83,9 +84,8 @@ const AdminSidebar = () => {
               {item.isAction ? (
                 <button
                   onClick={handleLogout}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
-                    'text-gray-400 hover:bg-gray-800 hover:text-white'
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${'text-gray-400 hover:bg-gray-800 hover:text-white'
+                    }`}
                 >
                   <span className="text-lg">{item.icon}</span>
                   <span className="font-medium">{item.label}</span>
@@ -93,11 +93,10 @@ const AdminSidebar = () => {
               ) : (
                 <Link
                   to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
-                    location.pathname === item.path
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${location.pathname === item.path
                       ? 'bg-[#2c43f5] text-white'
                       : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <span className="text-lg">{item.icon}</span>
                   <span className="font-medium">{item.label}</span>
@@ -105,6 +104,19 @@ const AdminSidebar = () => {
               )}
             </li>
           ))}
+
+          {/* Control Center section */}
+          <li className="mt-4">
+            <div className="px-4 py-2 text-xs text-gray-500 uppercase">Control Center</div>
+            <Link
+              to="/admin/discounts"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${location.pathname === '/admin/discounts' ? 'bg-[#2c43f5] text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                }`}
+            >
+              <span className="text-lg"><FiCreditCard /></span>
+              <span className="font-medium">Discounts</span>
+            </Link>
+          </li>
         </ul>
       </nav>
 

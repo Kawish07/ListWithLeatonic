@@ -87,7 +87,7 @@ const LoaderCube3D = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         /* Floating animations for background orbs */
         @keyframes float-1 {
           0%, 100% { transform: translate(0, 0) scale(1); }

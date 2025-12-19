@@ -4,6 +4,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer
 } from 'recharts';
+import { Link } from 'react-router-dom';
 import {
   FiUsers, FiTrendingUp, FiTarget, FiDollarSign,
   FiEdit, FiTrash2, FiHome, FiRefreshCw,
@@ -15,6 +16,7 @@ import {
 } from 'react-icons/fi';
 import ClientInquiriesSection from '../components/ClientInquiriesSection';
 import useToastStore from '../store/toastStore';
+import DiscountsPage from './DiscountsPage';
 import { FiLogOut } from 'react-icons/fi';
 import useAuthStore from '../store/authStore';
 
@@ -193,6 +195,77 @@ const DashboardPage = () => {
     if (full) return full;
     if (lead.email) return lead.email.split('@')[0];
     return 'Unknown';
+  };
+
+  // Resolve assigned agent display name defensively
+  const getAssignedName = (lead) => {
+    const a = lead?.assignedTo;
+    if (!a) return '—';
+    if (typeof a === 'object') {
+      if (a.name) return a.name;
+      if (a.firstName || a.lastName) return `${a.firstName || ''} ${a.lastName || ''}`.trim();
+      if (a.email) return a.email;
+      if (a._id) {
+        const found = agents.find(x => String(x._id) === String(a._id) || String(x.id) === String(a._id));
+        if (found) return found.name || found.email || String(found._id);
+      }
+      return String(a);
+    }
+    if (typeof a === 'string') {
+      const byId = agents.find(x => String(x._id) === a || String(x.id) === a);
+      if (byId) return byId.name || byId.email || String(byId._id);
+      return a;
+    }
+    return '—';
+  };
+
+  // Agent profile modal state
+  const [selectedAgent, setSelectedAgent] = useState(null);
+  const [showAgentModal, setShowAgentModal] = useState(false);
+
+  const openAgentModal = async (agentId) => {
+    if (!agentId) return;
+    // prefer fetching full agent record from server for freshest data
+    let agent = agents.find(a => a && (String(a._id) === String(agentId) || String(a.id) === String(agentId)));
+    try {
+      const resp = await fetch(`http://localhost:5000/api/admin/users/${agentId}`);
+      if (resp.ok) {
+        const json = await resp.json();
+        // support both { user: {...} } and direct user object
+        agent = json.user || json.data || json || agent;
+      }
+    } catch (err) {
+      // network failed — fallback to local agent data
+      console.warn('Failed to fetch agent record:', err);
+    }
+
+    if (!agent) return;
+
+    // compute assigned leads count
+    const assignedCount = agentAssignedMap[String(agent._id)] || 0;
+    // compute clients assigned to this agent (support clientInfo.assignedAgent)
+    const clientsAssigned = (allClients || []).filter(c => {
+      const assigned = c?.clientInfo?.assignedAgent || c?.assignedAgent || c?.assignedTo;
+      return assigned && (String(assigned) === String(agent._id) || (assigned._id && String(assigned._id) === String(agent._id)));
+    });
+
+    // compute leads assigned to this agent
+    const leadsAssigned = (allLeads || []).filter(l => {
+      const assigned = l?.assignedTo;
+      return assigned && (String(assigned) === String(agent._id) || (assigned._id && String(assigned._id) === String(agent._id)));
+    });
+
+    // normalize image
+    const profileImage = agent.profileImage || agent.avatar || agent.image || agent.photo || agent.userImage || agent.profilePic || '';
+    const profileImageUrl = normalizeImageUrl(profileImage) || '';
+
+    setSelectedAgent({ ...agent, assignedCount, clientsAssigned, leadsAssigned, profileImageUrl });
+    setShowAgentModal(true);
+  };
+
+  const closeAgentModal = () => {
+    setShowAgentModal(false);
+    setSelectedAgent(null);
   };
 
   // Helper to get an agent's readable location string
@@ -874,7 +947,7 @@ const DashboardPage = () => {
       color: 'orange',
       trend: 'neutral'
     },
-    
+
     {
       title: 'Leads This Week',
       value: leadsWeekCount?.toLocaleString() || '0',
@@ -899,8 +972,9 @@ const DashboardPage = () => {
     { id: 'properties', label: 'Properties', icon: <FiGrid /> },
     { id: 'users', label: 'Users', icon: <FiUser /> },
     { id: 'leads', label: 'Leads', icon: <FiTrendingUp /> },
+    { id: 'Discount', label: 'Discount', icon: <FiCreditCard /> },
     { id: 'inquiries', label: 'Inquiries', icon: <FiMessageSquare /> },
-    
+
   ];
 
   if (isLoading && refreshKey === 0) {
@@ -943,7 +1017,7 @@ const DashboardPage = () => {
               try {
                 const { logout } = useAuthStore.getState ? useAuthStore.getState() : useAuthStore();
                 if (typeof logout === 'function') return logout();
-              } catch (err) {}
+              } catch (err) { }
               window.location.href = '/signin';
             }}
             title="Logout"
@@ -960,12 +1034,13 @@ const DashboardPage = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white">
-              {activeSection === 'dashboard' && 'Dashboard'}
-              {activeSection === 'properties' && 'Properties Management'}
-              {activeSection === 'users' && 'Users Management'}
-              {activeSection === 'clients' && 'Clients Management'}
-              {activeSection === 'leads' && 'Leads Management'}
-              
+                {activeSection === 'dashboard' && 'Dashboard'}
+                {activeSection === 'properties' && 'Properties Management'}
+                {activeSection === 'users' && 'Users Management'}
+                {activeSection === 'clients' && 'Clients Management'}
+                {activeSection === 'leads' && 'Leads Management'}
+                {activeSection === 'Discount' && 'Discounts'}
+
             </h1>
             <p className="text-gray-400">
               {activeSection === 'dashboard' && 'Monitor your platform\'s performance'}
@@ -973,7 +1048,8 @@ const DashboardPage = () => {
               {activeSection === 'users' && 'Manage user accounts and permissions'}
               {activeSection === 'clients' && 'Manage client information and status'}
               {activeSection === 'leads' && 'Track and manage all leads'}
-              
+              {activeSection === 'Discount' && 'Create and manage discount coupons'}
+
             </p>
           </div>
           <div className="flex items-center space-x-4">
@@ -1089,7 +1165,13 @@ const DashboardPage = () => {
                     <div key={agent._id} className="bg-[#0b1220] p-4 rounded-lg border border-gray-700">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-white font-semibold">{agent.name || agent.email}</div>
+                          <button
+                            type="button"
+                            onClick={() => openAgentModal(agent._id)}
+                            className="text-white font-semibold hover:underline"
+                          >
+                            {agent.name || agent.email}
+                          </button>
                           <div className="text-gray-400 text-sm">{agent.email}</div>
                         </div>
                         <div className="text-right text-sm">
@@ -1148,7 +1230,7 @@ const DashboardPage = () => {
                 </div>
               </div>
 
-              
+
             </div>
 
             {/* Pending Properties Section */}
@@ -1233,6 +1315,13 @@ const DashboardPage = () => {
             )}
           </>
         )}
+
+        {/* DISCOUNT SECTION */}
+        {activeSection === 'Discount' && (
+          <div>
+            <DiscountsPage />
+          </div>
+        )}
         {/* Property View Modal */}
         {showPropertyView && modalProperty && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1241,7 +1330,7 @@ const DashboardPage = () => {
               {/* Header image */}
               <div className="relative h-56 w-full bg-gray-700">
                 {Array.isArray(modalProperty.images) && modalProperty.images[0] ? (
-                  <img src={modalProperty.images[0]} alt={modalProperty.title} className="w-full h-full object-cover" onError={(e)=>{e.target.style.display='none'}} />
+                  <img src={modalProperty.images[0]} alt={modalProperty.title} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none' }} />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">No image</div>
                 )}
@@ -1950,7 +2039,7 @@ const DashboardPage = () => {
                   <FiPlus />
                   <span>Add Lead</span>
                 </button>
-                <select className="bg-gray-800 text-white px-4 py-2 rounded-lg" value={''} onChange={(e) => {/* filter handler can be wired here */}}>
+                <select className="bg-gray-800 text-white px-4 py-2 rounded-lg" value={''} onChange={(e) => {/* filter handler can be wired here */ }}>
                   <option value="">All Status</option>
                   <option value="pending">Pending</option>
                   <option value="contacted">Contacted</option>
@@ -2014,11 +2103,11 @@ const DashboardPage = () => {
                         <option value="">Select agent (Optional)</option>
                         {Array.isArray(agents)
                           ? agents.filter(Boolean).map(agent => (
-                              <option key={String(agent._id)} value={String(agent._id)}>
-                                {agent?.name || 'Unnamed'} ({agent?.email || 'no-email'})
-                                {agent?.address?.city ? ` - ${agent?.address?.city}` : ''}
-                              </option>
-                            ))
+                            <option key={String(agent._id)} value={String(agent._id)}>
+                              {agent?.name || 'Unnamed'} ({agent?.email || 'no-email'})
+                              {agent?.address?.city ? ` - ${agent?.address?.city}` : ''}
+                            </option>
+                          ))
                           : null}
                       </select>
                       {/* Show selected agent location for context */}
@@ -2272,6 +2361,10 @@ const DashboardPage = () => {
                   <tr className="border-b border-gray-700">
                     <th className="text-left py-3 px-4 text-gray-400 font-medium">Lead</th>
                     <th className="text-left py-3 px-4 text-gray-400 font-medium">Contact</th>
+                    <th className="text-left py-3 px-4 text-gray-400 font-medium">Assigned to</th>
+                    <th className="text-left py-3 px-4 text-gray-400 font-medium">City</th>
+                    <th className="text-left py-3 px-4 text-gray-400 font-medium">State</th>
+                    <th className="text-left py-3 px-4 text-gray-400 font-medium">Country</th>
                     <th className="text-left py-3 px-4 text-gray-400 font-medium">Source</th>
                     <th className="text-left py-3 px-4 text-gray-400 font-medium">Status</th>
                     <th className="text-left py-3 px-4 text-gray-400 font-medium">Actions</th>
@@ -2282,15 +2375,15 @@ const DashboardPage = () => {
                     <tr key={lead._id} className="border-b border-gray-800 hover:bg-gray-800/30">
                       <td className="py-3 px-4">
                         <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
-                                  <span className="text-white font-bold">
-                                    {getLeadDisplayName(lead)?.charAt(0).toUpperCase()}
-                                  </span>
-                                </div>
-                                <div>
-                                  <p className="text-white font-medium">{getLeadDisplayName(lead)}</p>
-                                  <p className="text-gray-400 text-sm">Lead</p>
-                                </div>
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
+                            <span className="text-white font-bold">
+                              {getLeadDisplayName(lead)?.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">{getLeadDisplayName(lead)}</p>
+                            <p className="text-gray-400 text-sm">Lead</p>
+                          </div>
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -2305,6 +2398,33 @@ const DashboardPage = () => {
                           </div>
                         </div>
                       </td>
+
+                      <td className="py-3 px-4">
+                        {(() => {
+                          // try to extract agent id
+                          const assigned = lead?.assignedTo;
+                          const agentId = assigned?._id || assigned;
+                          if (!agentId) return <span className="text-gray-400">—</span>;
+                          return (
+                            <button type="button" onClick={() => openAgentModal(agentId)} className="text-white text-sm hover:underline">
+                              {getAssignedName(lead)}
+                            </button>
+                          );
+                        })()}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className="text-white text-sm">{lead.city || '—'}</span>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className="text-white text-sm">{lead.stateProvince || '—'}</span>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className="text-white text-sm">{lead.country || '—'}</span>
+                      </td>
+
                       <td className="py-3 px-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${lead.source === 'website' ? 'bg-blue-500/20 text-blue-400' :
                           lead.source === 'phone' ? 'bg-green-500/20 text-green-400' :
@@ -2314,6 +2434,7 @@ const DashboardPage = () => {
                           {lead.source?.charAt(0).toUpperCase() + lead.source?.slice(1)}
                         </span>
                       </td>
+
                       <td className="py-3 px-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${lead.status === 'new' ? 'bg-blue-500/20 text-blue-400' :
                           lead.status === 'contacted' ? 'bg-orange-500/20 text-orange-400' :
@@ -2363,6 +2484,119 @@ const DashboardPage = () => {
             <div className="flex justify-end gap-3">
               <button className="px-4 py-2 bg-gray-600 rounded" onClick={() => { setShowConfirm(false); confirmCallbackRef.current = null; }}>Cancel</button>
               <button className="px-4 py-2 bg-red-600 rounded" onClick={async () => { setShowConfirm(false); const cb = confirmCallbackRef.current; confirmCallbackRef.current = null; if (cb) await cb(); }}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Agent Profile Modal */}
+      {showAgentModal && selectedAgent && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/60" onClick={closeAgentModal}></div>
+          <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-[#05060a] text-white w-full max-w-3xl p-0 rounded-lg shadow-2xl z-70 overflow-auto max-h-[85vh]">
+            <div className="p-6 border-b border-white/5 flex items-start gap-6">
+              <div className="w-24 h-24 rounded-xl overflow-hidden bg-gradient-to-br from-slate-700 to-slate-600 flex-shrink-0 shadow-lg">
+                {selectedAgent.profileImageUrl ? (
+                  <img src={selectedAgent.profileImageUrl} alt={selectedAgent.name || 'Agent'} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white bg-gradient-to-br from-gray-700 to-gray-800">
+                    <span className="text-2xl font-semibold">{(selectedAgent.name || selectedAgent.email || 'A').charAt(0).toUpperCase()}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-2xl font-extrabold tracking-tight">{selectedAgent.name || selectedAgent.email}</h3>
+                    <p className="text-sm text-gray-300 mt-1">{selectedAgent.title || selectedAgent.role || 'Agent'} • <span className="text-blue-400">{selectedAgent.email}</span></p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <a href={`tel:${selectedAgent.phone || ''}`} className="px-3 py-2 bg-white/6 hover:bg-white/10 rounded-lg text-sm flex items-center gap-2"><FiPhone /> Call</a>
+                    <a href={`mailto:${selectedAgent.email || ''}`} className="px-3 py-2 bg-white/6 hover:bg-white/10 rounded-lg text-sm flex items-center gap-2"><FiMail /> Email</a>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="px-3 py-2 bg-white/5 rounded-lg text-sm">
+                    <div className="text-xs text-gray-300">Leads</div>
+                    <div className="text-lg font-semibold">{selectedAgent.assignedCount || (selectedAgent.leadsAssigned ? selectedAgent.leadsAssigned.length : 0)}</div>
+                  </div>
+                  <div className="px-3 py-2 bg-white/5 rounded-lg text-sm">
+                    <div className="text-xs text-gray-300">Clients</div>
+                    <div className="text-lg font-semibold">{selectedAgent.clientsAssigned ? selectedAgent.clientsAssigned.length : 0}</div>
+                  </div>
+                  <div className="px-3 py-2 bg-white/5 rounded-lg text-sm">
+                    <div className="text-xs text-gray-300">Plan</div>
+                    <div className="text-lg font-semibold">{(selectedAgent.agentInfo?.membership?.plan || selectedAgent.membership?.plan) || '—'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="text-sm text-gray-300">Contact</div>
+                <div className="bg-[#07101a] border border-white/5 rounded-lg p-4">
+                  <div className="text-white font-medium">{selectedAgent.phone ? (<a href={`tel:${selectedAgent.phone}`} className="hover:underline">{selectedAgent.phone}</a>) : '—'}</div>
+                  <div className="text-blue-400 text-sm mt-1">{selectedAgent.email ? (<a href={`mailto:${selectedAgent.email}`} className="hover:underline">{selectedAgent.email}</a>) : '—'}</div>
+                  <div className="text-gray-400 text-sm mt-2">
+                    {(() => {
+                      const addr = selectedAgent.address || selectedAgent.agentInfo?.address || selectedAgent.location || {};
+                      const parts = [addr.street, addr.city, addr.state || addr.stateProvince, addr.country, addr.zipCode].filter(Boolean);
+                      return parts.length ? parts.join(', ') : '—';
+                    })()}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-semibold">Clients</h4>
+                  {selectedAgent.clientsAssigned && selectedAgent.clientsAssigned.length > 0 ? (
+                    <ul className="mt-2 space-y-2">
+                      {selectedAgent.clientsAssigned.map(c => (
+                        <li key={c._id} className="p-3 bg-[#07101a] border border-white/6 rounded-lg hover:scale-[1.01] transition-transform">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-white font-medium">{c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email}</div>
+                              <div className="text-gray-400 text-sm">{c.email || ''}{c.phone ? ` · ${c.phone}` : ''}</div>
+                            </div>
+                            <div className="text-sm text-gray-400">{c.company || ''}</div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-400 mt-2">No clients assigned to this agent.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-lg font-semibold">Leads</h4>
+                  {selectedAgent.leadsAssigned && selectedAgent.leadsAssigned.length > 0 ? (
+                    <ul className="mt-2 space-y-3">
+                      {selectedAgent.leadsAssigned.map(lead => (
+                        <li key={lead._id} className="p-3 bg-[#07101a] border border-white/6 rounded-lg hover:shadow-lg transition-shadow">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <div className="text-white font-medium">{(lead.firstName || lead.name) ? `${lead.firstName || ''} ${lead.lastName || lead.name || ''}`.trim() : lead.email || 'Unnamed Lead'}</div>
+                              <div className="text-gray-400 text-sm mt-1">{lead.email || ''}{lead.phone ? ` · ${lead.phone}` : ''}</div>
+                              <div className="text-gray-400 text-sm">{(lead.city || lead.stateProvince) ? `${lead.city || ''}${lead.city && lead.stateProvince ? ', ' : ''}${lead.stateProvince || ''}` : ''}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm text-gray-300 mb-1">{lead.status || '-'}</div>
+                              <div className="text-gray-400 text-xs">{lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : ''}</div>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-400 mt-2">No leads assigned to this agent.</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
