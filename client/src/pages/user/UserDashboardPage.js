@@ -311,7 +311,7 @@ const UserDashboardPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Header */}
-      <div ref={headerRef} className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 text-white p-8 shadow-lg">
+      <div ref={headerRef} className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 text-white p-8 shadow-lg relative z-0">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div>
@@ -339,7 +339,7 @@ const UserDashboardPage = () => {
       </div>
 
       {/* Stats Cards */}
-      <div ref={statsRef} className="max-w-7xl mx-auto px-4 md:px-8 -mt-8">
+      <div ref={statsRef} className="max-w-7xl mx-auto px-4 md:px-8 -mt-8 relative z-40">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {[
             {
@@ -381,7 +381,7 @@ const UserDashboardPage = () => {
             <Link
               key={index}
               to={stat.link}
-              className="stat-card bg-white/60 backdrop-blur-md rounded-2xl p-6 shadow-lg hover:shadow-xl border border-blue-100/50 transition-all duration-300 hover:-translate-y-1"
+              className="stat-card bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-blue-100/50 transition-all duration-300 hover:-translate-y-1 relative z-40"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -398,16 +398,43 @@ const UserDashboardPage = () => {
       </div>
 
       {/* Main Content */}
-      <div ref={contentRef} className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+      <div ref={contentRef} className="max-w-7xl mx-auto px-4 md:px-8 py-8 relative z-40">
         {error && (
-          <div className="mb-6 p-4 bg-red-50/80 backdrop-blur-sm text-red-700 rounded-2xl border border-red-200/50">
-            {error}
+          <div className="mb-6">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-gradient-to-r from-red-50/60 to-red-100/40 border border-red-200/40 shadow-md">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center shadow-sm">
+                  <FiXCircle />
+                </div>
+              </div>
+
+              <div className="flex-1">
+                <p className="text-red-800 font-semibold">Unable to load dashboard</p>
+                <p className="text-sm text-red-600 mt-1">{error}</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setError(''); fetchUserDashboardData(); }}
+                  className="px-3 py-1 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm hover:shadow-sm"
+                >
+                  Retry
+                </button>
+                <button
+                  onClick={() => setError('')}
+                  aria-label="Close"
+                  className="text-gray-500 hover:text-gray-700 p-2 rounded-lg"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Leads */}
-          <div className="bg-white/60 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-blue-100/50">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-blue-100/50">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800">Recent Leads Assigned to You</h2>
               <div className="flex items-center gap-4">
@@ -429,7 +456,7 @@ const UserDashboardPage = () => {
             <div className="space-y-4">
               {recentLeads.length > 0 ? (
                 recentLeads.map((lead, index) => (
-                  <div key={lead._id} className="p-4 bg-white/40 backdrop-blur-sm border border-blue-100/50 rounded-2xl hover:bg-white/60 hover:border-blue-200 hover:shadow-md transition-all duration-300">
+                  <div key={lead._id} className="p-4 bg-white border border-blue-100/50 rounded-2xl hover:bg-white/60 hover:border-blue-200 hover:shadow-md transition-all duration-300">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md">
@@ -496,7 +523,7 @@ const UserDashboardPage = () => {
           </div>
 
           {/* My Properties */}
-          <div className="bg-white/60 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-blue-100/50">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-blue-100/50">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800">My Properties</h2>
               <div className="flex items-center gap-4">
@@ -537,7 +564,7 @@ const UserDashboardPage = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="mt-8 bg-white/60 backdrop-blur-md rounded-2xl p-8 border border-blue-100/50 shadow-lg">
+        <div className="mt-8 bg-white rounded-2xl p-8 border border-blue-100/50 shadow-lg">
           <h3 className="text-xl font-bold text-gray-800 mb-6">Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Link

@@ -370,39 +370,53 @@ const HomePage = () => {
     }
   };
 
-  // 4. SCROLL HANDLER (UPDATED: Added gap during reverse scroll)
+  // 4. SCROLL HANDLER (OPTIMIZED: Smooth appearance and no jitter)
   useEffect(() => {
+    let ticking = false;
+    
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const windowHeight = window.innerHeight;
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollY = window.scrollY;
+          const windowHeight = window.innerHeight;
 
-      const startAppear = windowHeight * 0.05;
-      const fullyVisible = windowHeight * 0.6;
-      const startFlip = windowHeight * 1.0;
-      const endFlip = windowHeight * 3.0;
+          const startAppear = windowHeight * 0.1;
+          const fullyVisible = windowHeight * 0.7;
+          const startFlip = windowHeight * 1.2;
+          const endFlip = windowHeight * 3.0;
 
-      let progress = 0;
+          let progress = 0;
 
-      if (scrollY >= startAppear && scrollY < fullyVisible) {
-        progress =
-          ((scrollY - startAppear) / (fullyVisible - startAppear)) * 0.3;
-      } else if (scrollY >= fullyVisible && scrollY < startFlip) {
-        progress =
-          0.3 + ((scrollY - fullyVisible) / (startFlip - fullyVisible)) * 0.1;
-      } else if (scrollY >= startFlip) {
-        const flipProgress = (scrollY - startFlip) / (endFlip - startFlip);
-        progress = 0.4 + flipProgress * 0.6;
-      }
+          if (scrollY < startAppear) {
+            progress = 0;
+          } else if (scrollY >= startAppear && scrollY < fullyVisible) {
+            const range = fullyVisible - startAppear;
+            const current = scrollY - startAppear;
+            progress = (current / range) * 0.3;
+          } else if (scrollY >= fullyVisible && scrollY < startFlip) {
+            const range = startFlip - fullyVisible;
+            const current = scrollY - fullyVisible;
+            progress = 0.3 + (current / range) * 0.1;
+          } else if (scrollY >= startFlip) {
+            const range = endFlip - startFlip;
+            const current = Math.min(scrollY - startFlip, range);
+            progress = 0.4 + (current / range) * 0.6;
+          }
 
-      progress = Math.max(0, Math.min(1, progress));
-      setScrollProgress(progress);
+          progress = Math.max(0, Math.min(1, progress));
+          setScrollProgress(progress);
 
-      if (progress >= 0.9) {
-        setIsFlipComplete(true);
-        setShowContent(true);
-      } else if (progress < 0.4) {
-        setIsFlipComplete(false);
-        setShowContent(false);
+          if (progress >= 0.88) {
+            setIsFlipComplete(true);
+            setShowContent(true);
+          } else if (progress < 0.35) {
+            setIsFlipComplete(false);
+            setShowContent(false);
+          }
+          
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
@@ -426,6 +440,8 @@ const HomePage = () => {
   const overlayOpacity = showContent ? 1 : 0;
 
   const showReviews = scrollProgress >= 0.35 || showContent;
+
+  const isDarkMode = (typeof window !== 'undefined') && (document.documentElement.classList.contains('dark') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
 
   // 6. RENDER (Enhanced review cards with better design + stylish background pattern)
   return (
@@ -478,63 +494,30 @@ const HomePage = () => {
 
       <div className="h-screen"></div>
 
-      {/* ENHANCED Left Review Cards */}
+      {/* CTA Cards replacing review card positions (left-top, left-bottom, right-top) */}
       <div
         style={{
           position: "absolute",
           left: "calc(30% - 280px)",
           top: "20vh",
           transform: `translateX(0) translateY(${showReviews ? "0" : "120vh"}) translateZ(0)`,
-          transition:
-            "transform 450ms cubic-bezier(0.4, 0, 0.2, 1), opacity 400ms ease",
+          transition: "transform 450ms cubic-bezier(0.4, 0, 0.2, 1), opacity 400ms ease",
           willChange: "transform, opacity",
           opacity: showReviews ? 1 : 0,
           zIndex: 20,
           pointerEvents: showReviews ? "auto" : "none",
         }}
       >
-        <div
-          className="max-w-sm bg-gradient-to-br from-white via-blue-50 to-white rounded-3xl p-6 shadow-2xl border border-blue-100"
-          style={{ width: 320 }}
-        >
-          <div className="flex items-start gap-4 mb-4">
-            <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-hidden shadow-lg">
-                <img
-                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><rect fill='%23f3f4f6' width='128' height='128'/><circle cx='64' cy='44' r='28' fill='%23c7d2fe'/><rect x='28' y='86' width='72' height='14' rx='7' fill='%23e6eefc'/></svg>"
-                  alt="avatar"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-md"></div>
+        <div className="max-w-sm rounded-3xl p-6 shadow-2xl border bg-white text-blue-900" style={{ width: 320 }}>
+          <div className="flex flex-col items-start gap-4">
+            <div className="rounded-full p-4 bg-gray-50">
+              <span className="text-2xl">🏠</span>
             </div>
-            <div className="flex-1">
-              <div className="text-base font-bold text-gray-900">
-                Arushi Sharma
-              </div>
-              <div className="text-xs text-gray-500 mb-2">
-                Head of Design • 2 days ago
-              </div>
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star
-                    key={i}
-                    className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400"
-                  />
-                ))}
-              </div>
+            <h3 className="text-lg font-bold text-blue-900">Buy a Home</h3>
+            <p className="text-sm text-blue-700">Custom search, smart insights and expert agents at your service.</p>
+            <div className="mt-3">
+              <Link to="/contact" className="inline-block bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold">Find a home</Link>
             </div>
-          </div>
-          <Quote className="w-6 h-6 text-blue-400 opacity-50 mb-2" />
-          <div className="text-sm text-gray-700 leading-relaxed">
-            A top choice for interior design projects that put accessibility and
-            disability-friendly features first. Outstanding attention to detail!
-          </div>
-          <div className="mt-4 pt-4 border-t border-blue-100 flex items-center justify-between text-xs text-gray-500">
-            <span>✓ Verified Purchase</span>
-            <span className="flex items-center gap-1">
-              <span className="text-blue-600 font-semibold">4.9/5</span>
-            </span>
           </div>
         </div>
       </div>
@@ -545,176 +528,50 @@ const HomePage = () => {
           left: "calc(30% - 280px)",
           top: "65vh",
           transform: `translateX(0) translateY(${showReviews ? "0" : "140vh"}) translateZ(0)`,
-          transition:
-            "transform 520ms cubic-bezier(0.4, 0, 0.2, 1), opacity 500ms ease",
+          transition: "transform 520ms cubic-bezier(0.4, 0, 0.2, 1), opacity 500ms ease",
           willChange: "transform, opacity",
           opacity: showReviews ? 1 : 0,
           zIndex: 20,
           pointerEvents: showReviews ? "auto" : "none",
         }}
       >
-        <div
-          className="max-w-sm bg-gradient-to-br from-white via-purple-50 to-white rounded-3xl p-6 shadow-2xl border border-purple-100"
-          style={{ width: 320 }}
-        >
-          <div className="flex items-start gap-4 mb-4">
-            <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center overflow-hidden shadow-lg">
-                <img
-                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><rect fill='%23fff7ed' width='128' height='128'/><circle cx='64' cy='44' r='28' fill='%23fbcfe8'/><rect x='28' y='86' width='72' height='14' rx='7' fill='%23fee7f3'/></svg>"
-                  alt="avatar"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-md"></div>
+        <div className="max-w-sm rounded-3xl p-6 shadow-2xl border bg-white text-purple-900" style={{ width: 320 }}>
+          <div className="flex flex-col items-start gap-4">
+            <div className="rounded-full p-4 bg-gray-50">
+              <span className="text-2xl">🏷️</span>
             </div>
-            <div className="flex-1">
-              <div className="text-base font-bold text-gray-900">Maya Chen</div>
-              <div className="text-xs text-gray-500 mb-2">
-                Property Manager • 1 week ago
-              </div>
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4].map((i) => (
-                  <Star
-                    key={i}
-                    className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400"
-                  />
-                ))}
-                <Star className="w-3.5 h-3.5 fill-gray-300 text-gray-300" />
-              </div>
+            <h3 className="text-lg font-bold text-purple-900">Get Pre-Approved</h3>
+            <p className="text-sm text-purple-700">Partner with top agents to get approved fast and confidently.</p>
+            <div className="mt-3">
+              <Link to="/contact" className="inline-block bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg font-semibold">Get Pre-Approved</Link>
             </div>
-          </div>
-          <Quote className="w-6 h-6 text-purple-400 opacity-50 mb-2" />
-          <div className="text-sm text-gray-700 leading-relaxed">
-            The platform made finding accessible properties so much easier. Love
-            the detailed accessibility features and virtual tours!
-          </div>
-          <div className="mt-4 pt-4 border-t border-purple-100 flex items-center justify-between text-xs text-gray-500">
-            <span>✓ Verified User</span>
-            <span className="flex items-center gap-1">
-              <span className="text-purple-600 font-semibold">4.5/5</span>
-            </span>
           </div>
         </div>
       </div>
 
-      {/* ENHANCED Right Review Cards */}
       <div
         style={{
           position: "absolute",
           left: "calc(50% + 280px)",
           top: "20vh",
           transform: `translateX(0) translateY(${showReviews ? "0" : "125vh"}) translateZ(0)`,
-          transition:
-            "transform 450ms cubic-bezier(0.4, 0, 0.2, 1), opacity 400ms ease",
+          transition: "transform 450ms cubic-bezier(0.4, 0, 0.2, 1), opacity 400ms ease",
           willChange: "transform, opacity",
           opacity: showReviews ? 1 : 0,
           zIndex: 20,
           pointerEvents: showReviews ? "auto" : "none",
         }}
       >
-        <div
-          className="max-w-sm bg-gradient-to-br from-white via-green-50 to-white rounded-3xl p-6 shadow-2xl border border-green-100 text-right"
-          style={{ width: 320 }}
-        >
-          <div className="flex items-start gap-4 mb-4 flex-row-reverse">
-            <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center overflow-hidden shadow-lg">
-                <img
-                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><rect fill='%23ecfdf5' width='128' height='128'/><circle cx='64' cy='44' r='28' fill='%23bbf7d0'/><rect x='28' y='86' width='72' height='14' rx='7' fill='%23e6fff4'/></svg>"
-                  alt="avatar"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-1 -left-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-md"></div>
+        <div className="max-w-sm rounded-3xl p-6 shadow-2xl border bg-white text-green-900" style={{ width: 320 }}>
+          <div className="flex flex-col items-start gap-4">
+            <div className="rounded-full p-4 bg-gray-50">
+              <span className="text-2xl">🔑</span>
             </div>
-            <div className="flex-1">
-              <div className="text-base font-bold text-gray-900">
-                Kshitij K.
-              </div>
-              <div className="text-xs text-gray-500 mb-2">
-                Advocate • 3 days ago
-              </div>
-              <div className="flex items-center gap-1 justify-end">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star
-                    key={i}
-                    className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400"
-                  />
-                ))}
-              </div>
+            <h3 className="text-lg font-bold text-green-900">Sell Your Home</h3>
+            <p className="text-sm text-green-700">Unlock the true value of your home with our expert guidance.</p>
+            <div className="mt-3">
+              <Link to="/contact" className="inline-block bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 py-2 rounded-lg font-semibold">Get Connect</Link>
             </div>
-          </div>
-          <Quote className="w-6 h-6 text-green-400 opacity-50 mb-2 ml-auto" />
-          <div className="text-sm text-gray-700 leading-relaxed">
-            Equispace created a disability-friendly space that's as beautiful as
-            it is accessible. Truly transformative work!
-          </div>
-          <div className="mt-4 pt-4 border-t border-green-100 flex items-center justify-between text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <span className="text-green-600 font-semibold">4.8/5</span>
-            </span>
-            <span>✓ Verified Client</span>
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          left: "calc(50% + 280px)",
-          top: "65vh",
-          transform: `translateX(0) translateY(${showReviews ? "0" : "140vh"}) translateZ(0)`,
-          transition:
-            "transform 520ms cubic-bezier(0.4, 0, 0.2, 1), opacity 500ms ease",
-          willChange: "transform, opacity",
-          opacity: showReviews ? 1 : 0,
-          zIndex: 20,
-          pointerEvents: showReviews ? "auto" : "none",
-        }}
-      >
-        <div
-          className="max-w-sm bg-gradient-to-br from-white via-orange-50 to-white rounded-3xl p-6 shadow-2xl border border-orange-100 text-right"
-          style={{ width: 320 }}
-        >
-          <div className="flex items-start gap-4 mb-4 flex-row-reverse">
-            <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center overflow-hidden shadow-lg">
-                <img
-                  src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><rect fill='%23fff7ed' width='128' height='128'/><circle cx='64' cy='44' r='28' fill='%23ffd8a8'/><rect x='28' y='86' width='72' height='14' rx='7' fill='%23fff4e6'/></svg>"
-                  alt="avatar"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-1 -left-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-md"></div>
-            </div>
-            <div className="flex-1">
-              <div className="text-base font-bold text-gray-900">
-                James Rodriguez
-              </div>
-              <div className="text-xs text-gray-500 mb-2">
-                Real Estate Agent • 5 days ago
-              </div>
-              <div className="flex items-center gap-1 justify-end">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star
-                    key={i}
-                    className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400"
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-          <Quote className="w-6 h-6 text-orange-400 opacity-50 mb-2 ml-auto" />
-          <div className="text-sm text-gray-700 leading-relaxed">
-            Game changer for my clients with mobility needs. The search filters
-            are incredibly detailed and accurate.
-          </div>
-          <div className="mt-4 pt-4 border-t border-orange-100 flex items-center justify-between text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <span className="text-orange-600 font-semibold">5.0/5</span>
-            </span>
-            <span>✓ Verified Professional</span>
           </div>
         </div>
       </div>
@@ -725,7 +582,7 @@ const HomePage = () => {
         className="fixed left-1/2 pointer-events-none"
         style={{
           left: "50%",
-          top: showContent ? "30vh" : "35vh",
+          top: showContent ? "20vh" : "26vh",
           transform: "translateX(-50%)",
           opacity: cardOpacity,
           zIndex: showContent ? 40 : 50,

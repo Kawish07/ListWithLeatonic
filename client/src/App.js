@@ -311,7 +311,6 @@ function AppContent() {
         <Route path="/add-property" element={
           <ProtectedRoute>
             <>
-              <Header />
               <AddPropertyPage />
               <Footer />
             </>

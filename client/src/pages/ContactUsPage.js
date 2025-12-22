@@ -50,37 +50,53 @@ const ContactUsPage = () => {
     }
   ];
 
-  // SCROLL HANDLER (FROM HOMEPAGE)
+ // 4. SCROLL HANDLER (OPTIMIZED: Smooth appearance and no jitter)
   useEffect(() => {
+    let ticking = false;
+    
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const windowHeight = window.innerHeight;
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollY = window.scrollY;
+          const windowHeight = window.innerHeight;
 
-      const startAppear = windowHeight * 0.05;
-      const fullyVisible = windowHeight * 0.6;
-      const startFlip = windowHeight * 1.0;
-      const endFlip = windowHeight * 3.0;
+          const startAppear = windowHeight * 0.1;
+          const fullyVisible = windowHeight * 0.7;
+          const startFlip = windowHeight * 1.2;
+          const endFlip = windowHeight * 3.0;
 
-      let progress = 0;
+          let progress = 0;
 
-      if (scrollY >= startAppear && scrollY < fullyVisible) {
-        progress = ((scrollY - startAppear) / (fullyVisible - startAppear)) * 0.3;
-      } else if (scrollY >= fullyVisible && scrollY < startFlip) {
-        progress = 0.3 + ((scrollY - fullyVisible) / (startFlip - fullyVisible)) * 0.1;
-      } else if (scrollY >= startFlip) {
-        const flipProgress = (scrollY - startFlip) / (endFlip - startFlip);
-        progress = 0.4 + flipProgress * 0.6;
-      }
+          if (scrollY < startAppear) {
+            progress = 0;
+          } else if (scrollY >= startAppear && scrollY < fullyVisible) {
+            const range = fullyVisible - startAppear;
+            const current = scrollY - startAppear;
+            progress = (current / range) * 0.3;
+          } else if (scrollY >= fullyVisible && scrollY < startFlip) {
+            const range = startFlip - fullyVisible;
+            const current = scrollY - fullyVisible;
+            progress = 0.3 + (current / range) * 0.1;
+          } else if (scrollY >= startFlip) {
+            const range = endFlip - startFlip;
+            const current = Math.min(scrollY - startFlip, range);
+            progress = 0.4 + (current / range) * 0.6;
+          }
 
-      progress = Math.max(0, Math.min(1, progress));
-      setScrollProgress(progress);
+          progress = Math.max(0, Math.min(1, progress));
+          setScrollProgress(progress);
 
-      if (progress >= 0.9) {
-        setIsFlipComplete(true);
-        setShowContent(true);
-      } else if (progress < 0.4) {
-        setIsFlipComplete(false);
-        setShowContent(false);
+          if (progress >= 0.88) {
+            setIsFlipComplete(true);
+            setShowContent(true);
+          } else if (progress < 0.35) {
+            setIsFlipComplete(false);
+            setShowContent(false);
+          }
+          
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
@@ -208,7 +224,7 @@ const ContactUsPage = () => {
         className="fixed left-1/2 pointer-events-none"
         style={{
           left: "50%",
-          top: showContent ? "30vh" : "35vh",
+          top: showContent ? "20vh" : "26vh",
           transform: "translateX(-50%)",
           opacity: cardOpacity,
           zIndex: showContent ? 40 : 50,

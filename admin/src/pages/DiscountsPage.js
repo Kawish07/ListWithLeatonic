@@ -36,6 +36,33 @@ const DiscountsPage = () => {
 
   useEffect(() => { fetchCoupons(); }, []);
 
+  const getExpiryTime = (c) => {
+    if (!c) return null;
+    if (c.expiresAt) {
+      const t = Date.parse(c.expiresAt);
+      return Number.isNaN(t) ? null : t;
+    }
+    if (c.createdAt && (c.durationMinutes !== undefined && c.durationMinutes !== null)) {
+      const t = Date.parse(c.createdAt);
+      if (Number.isNaN(t)) return null;
+      return t + Number(c.durationMinutes) * 60000;
+    }
+    return null;
+  };
+
+  const isExpired = (c) => {
+    const expiry = getExpiryTime(c);
+    if (expiry === null) return false;
+    return Date.now() > expiry;
+  };
+
+  const StatusBadge = ({ item }) => {
+    const expiry = getExpiryTime(item);
+    if (expiry === null) return <span className="text-yellow-300">Unknown</span>;
+    if (Date.now() > expiry) return <span className="text-rose-400 font-medium">Expired</span>;
+    return <span className="text-green-300 font-medium">Available</span>;
+  };
+
   const handleChange = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
   const handleGenerate = async (e) => {
@@ -162,6 +189,9 @@ const DiscountsPage = () => {
                 <div className="font-mono text-xl text-green-300 bg-black/30 px-3 py-2 rounded">{generated.code}</div>
                 <button onClick={()=>copyCode(generated.code)} className="text-sm text-gray-200 flex items-center gap-2"><FiCopy /> Copy</button>
               </div>
+              <div className="mt-3">
+                <StatusBadge item={generated} />
+              </div>
             </div>
           )}
         </form>
@@ -185,6 +215,7 @@ const DiscountsPage = () => {
                   <div className="text-right">
                     <div className="text-sm text-gray-300">${c.price}</div>
                     <div className="text-xs text-gray-400">{c.durationMinutes} min</div>
+                    <div className="text-xs mt-1"><StatusBadge item={c} /></div>
                   </div>
                 </div>
 

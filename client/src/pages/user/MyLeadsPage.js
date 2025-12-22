@@ -1,5 +1,6 @@
 // client/src/pages/user/MyLeadsPage.js
 import React, { useState, useEffect } from 'react';
+import useToastStore from '../../store/toastStore';
 import { useSearchParams, Link } from 'react-router-dom';
 import axios from '../../utils/api';
 import {
@@ -45,7 +46,7 @@ const MyLeadsPage = () => {
       setLeads(response.data.leads || []);
     } catch (error) {
       console.error('Error fetching leads:', error);
-      alert('Failed to load leads');
+      useToastStore.getState().add({ type: 'error', message: 'Failed to load leads' });
     } finally {
       setLoading(false);
     }
@@ -90,10 +91,10 @@ const MyLeadsPage = () => {
         lead._id === leadId ? { ...lead, status: newStatus } : lead
       ));
       
-      alert('Lead status updated successfully');
+      useToastStore.getState().add({ type: 'success', message: 'Lead status updated' });
     } catch (error) {
       console.error('Error updating lead status:', error);
-      alert('Failed to update lead status');
+      useToastStore.getState().add({ type: 'error', message: 'Failed to update lead status' });
     }
   };
 
@@ -105,10 +106,10 @@ const MyLeadsPage = () => {
         lead._id === leadId ? { ...lead, label: newLabel } : lead
       ));
       
-      alert('Lead label updated successfully');
+      useToastStore.getState().add({ type: 'success', message: 'Lead label updated' });
     } catch (error) {
       console.error('Error updating lead label:', error);
-      alert('Failed to update lead label');
+      useToastStore.getState().add({ type: 'error', message: 'Failed to update lead label' });
     }
   };
   // Labels removed — no label updates from agent dashboard
@@ -348,10 +349,10 @@ const MyLeadsPage = () => {
                                 // Update lead with note
                                 axios.put(`users/leads/${lead._id}`, { internalNote: note })
                                   .then(() => {
-                                    alert('Note updated');
+                                    useToastStore.getState().add({ type: 'success', message: 'Note updated' });
                                     fetchMyLeads();
                                   })
-                                  .catch(err => alert('Failed to update note'));
+                                  .catch(err => useToastStore.getState().add({ type: 'error', message: 'Failed to update note' }));
                               }
                             }}
                             className="px-3 py-1 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition flex items-center gap-1 justify-center"

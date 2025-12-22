@@ -17,6 +17,7 @@ import {
 import ClientInquiriesSection from '../components/ClientInquiriesSection';
 import useToastStore from '../store/toastStore';
 import DiscountsPage from './DiscountsPage';
+import AdminLoader3D from '../components/dashboard/AdminLoader3D';
 import { FiLogOut } from 'react-icons/fi';
 import useAuthStore from '../store/authStore';
 
@@ -271,19 +272,39 @@ const DashboardPage = () => {
   // Helper to get an agent's readable location string
   const getAgentLocation = (agentId) => {
     if (!agentId || !Array.isArray(agents)) return '';
-    const agent = agents.find(a => a && (String(a._id) === String(agentId) || String(a.id) === String(agentId)));
+
+    // normalize incoming id (may be string, object, or full agent object)
+    let lookupId = agentId;
+    if (typeof agentId === 'object') {
+      lookupId = agentId._id || agentId.id || agentId;
+    }
+    lookupId = String(lookupId);
+
+    const agent = agents.find(a => {
+      if (!a) return false;
+      const ids = [a._id, a.id, a.user?._id, a.user?.id, a._doc?._id, a._doc?.id];
+      return ids.some(x => x && String(x) === lookupId);
+    });
+
     if (!agent) return '';
-    // Support multiple shapes: agent.address or agent.location
-    const addr = agent.address || agent.location || {};
+
+    // Support multiple shapes: agent.address, agent.location, nested agent.agentInfo.address, agent.profile.address
+    const addr = agent.address || agent.location || agent.agentInfo?.address || agent.profile?.address || {};
+
+    if (typeof addr === 'string' && addr.trim()) return addr;
+
     const parts = [];
-    if (addr.city) parts.push(addr.city);
-    if (addr.state || addr.stateProvince) parts.push(addr.state || addr.stateProvince);
-    if (addr.country) parts.push(addr.country);
-    // fallback to top-level agent.city/agent.country
+    if (addr?.city) parts.push(addr.city);
+    if (addr?.state || addr?.stateProvince) parts.push(addr.state || addr.stateProvince);
+    if (addr?.country) parts.push(addr.country);
+
+    // fallback to nested or top-level fields
     if (parts.length === 0) {
+      if (agent.agentInfo?.city) parts.push(agent.agentInfo.city);
       if (agent.city) parts.push(agent.city);
       if (agent.country) parts.push(agent.country);
     }
+
     return parts.join(', ');
   };
 
@@ -981,7 +1002,7 @@ const DashboardPage = () => {
     return (
       <div className="flex bg-[#101624] min-h-screen">
         <main className="flex-1 p-6 overflow-y-auto flex items-center justify-center">
-          <div className="text-white text-xl">Loading dashboard data...</div>
+          <AdminLoader3D />
         </main>
       </div>
     );
@@ -2088,14 +2109,15 @@ const DashboardPage = () => {
                         value={newLead.assignedTo || ''}
                         onChange={(e) => {
                           const agentId = e.target.value;
-                          // find agent and copy location into lead fields
+                          // find agent and copy location into lead fields (support nested shapes)
                           const agent = agents.find(a => a && (String(a._id) === String(agentId) || String(a.id) === String(agentId)));
+                          const addr = agent?.address || agent?.location || agent?.agentInfo?.address || agent?.profile?.address || {};
                           setNewLead({
                             ...newLead,
                             assignedTo: agentId,
-                            city: agent?.address?.city || agent?.city || '',
-                            stateProvince: agent?.address?.state || agent?.address?.stateProvince || agent?.state || '',
-                            country: agent?.address?.country || agent?.country || ''
+                            city: addr?.city || agent?.agentInfo?.city || agent?.city || '',
+                            stateProvince: addr?.state || addr?.stateProvince || agent?.agentInfo?.state || agent?.state || '',
+                            country: addr?.country || agent?.agentInfo?.country || agent?.country || ''
                           });
                         }}
                         className="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2c43f5]"
@@ -2103,9 +2125,9 @@ const DashboardPage = () => {
                         <option value="">Select agent (Optional)</option>
                         {Array.isArray(agents)
                           ? agents.filter(Boolean).map(agent => (
-                            <option key={String(agent._id)} value={String(agent._id)}>
+                            <option key={String(agent._id || agent.id)} value={String(agent._id || agent.id)}>
                               {agent?.name || 'Unnamed'} ({agent?.email || 'no-email'})
-                              {agent?.address?.city ? ` - ${agent?.address?.city}` : ''}
+                              {getAgentLocation(agent._id || agent.id) ? ` - ${getAgentLocation(agent._id || agent.id)}` : ''}
                             </option>
                           ))
                           : null}

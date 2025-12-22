@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useToastStore from '../../store/toastStore';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../../utils/api';
 import {
@@ -31,7 +32,7 @@ const UserLeadDetailPage = () => {
         setLead(data);
       } catch (err) {
         console.error('Failed to load lead', err);
-        alert('Failed to load lead details');
+        useToastStore.getState().add({ type: 'error', message: 'Failed to load lead details' });
         navigate('/user/leads');
       } finally {
         setLoading(false);
@@ -50,10 +51,10 @@ const UserLeadDetailPage = () => {
     try {
       await axios.put(`users/leads/${id}`, { internalNote: note });
       setLead(prev => ({ ...prev, internalNote: note }));
-      alert('Note saved');
+      useToastStore.getState().add({ type: 'success', message: 'Note saved' });
     } catch (err) {
       console.error('Error saving note', err);
-      alert('Failed to save note');
+      useToastStore.getState().add({ type: 'error', message: 'Failed to save note' });
     } finally {
       setSavingNote(false);
     }
@@ -63,10 +64,10 @@ const UserLeadDetailPage = () => {
     try {
       await axios.put(`users/leads/${id}`, { status: newStatus });
       setLead(prev => ({ ...prev, status: newStatus }));
-      alert('Status updated');
+      useToastStore.getState().add({ type: 'success', message: 'Status updated' });
     } catch (err) {
       console.error('Failed to update status', err);
-      alert('Failed to update status');
+      useToastStore.getState().add({ type: 'error', message: 'Failed to update status' });
     }
   };
 

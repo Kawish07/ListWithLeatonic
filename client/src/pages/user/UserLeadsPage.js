@@ -1,5 +1,6 @@
 // client/src/pages/user/MyLeadsPage.js
 import React, { useState, useEffect } from 'react';
+import useToastStore from '../../store/toastStore';
 import { useSearchParams, Link } from 'react-router-dom';
 import axios from '../../utils/api';
 import {
@@ -46,7 +47,7 @@ const UserLeadsPage = () => {
       setLeads(response.data.leads || []);
     } catch (error) {
       console.error('Error fetching leads:', error);
-      alert('Failed to load leads');
+      useToastStore.getState().add({ type: 'error', message: 'Failed to load leads' });
     } finally {
       setLoading(false);
     }
@@ -91,10 +92,10 @@ const UserLeadsPage = () => {
         lead._id === leadId ? { ...lead, status: newStatus } : lead
       ));
       
-      alert('Lead status updated successfully');
+      useToastStore.getState().add({ type: 'success', message: 'Lead status updated' });
     } catch (error) {
       console.error('Error updating lead status:', error);
-      alert('Failed to update lead status');
+      useToastStore.getState().add({ type: 'error', message: 'Failed to update lead status' });
     }
   };
 
