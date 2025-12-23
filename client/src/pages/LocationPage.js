@@ -122,7 +122,6 @@ const LocationPage = () => {
           backgroundColor: containerBg,
           transform: `translateY(${contentTranslateY}vh)`,
           transition: 'transform 0.9s cubic-bezier(0.22,1,0.36,1), opacity 0.6s ease, background-color 2.5s ease-in-out',
-          marginBottom: '60px',
           minHeight: '100vh',
           opacity: contentVisible ? 1 : 0,
           pointerEvents: contentVisible ? 'auto' : 'none'

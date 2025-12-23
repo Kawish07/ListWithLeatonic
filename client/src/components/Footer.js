@@ -24,7 +24,7 @@ const Footer = () => {
                 zIndex: 60,
             }}
         >
-            <div className="relative z-10 h-full flex flex-col max-w-8xl mx-auto py-10 px-6 md:px-12 rounded-2xl bg-[#141414]" style={{ color: '#1f2937' }}>
+            <div className="relative z-10 h-full flex flex-col max-w-8xl mx-auto py-10 px-6 md:px-12 rounded-1xl bg-[#141414]" style={{ color: '#1f2937' }}>
                 {/* Main Content */}
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
                     {/* Left Side - Let's Connect */}

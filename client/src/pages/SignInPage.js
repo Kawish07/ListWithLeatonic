@@ -41,8 +41,8 @@ const SignInPage = () => {
           className="absolute inset-0 opacity-10"
           style={{
             backgroundImage: `
-              linear-gradient(to right, rgba(99, 102, 241, 0.3) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(99, 102, 241, 0.3) 1px, transparent 1px)
+              linear-gradient(to right, rgba(23, 23, 25, 0.3) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(47, 47, 48, 0.3) 1px, transparent 1px)
             `,
             backgroundSize: '60px 60px'
           }}
@@ -57,7 +57,7 @@ const SignInPage = () => {
         <div 
           className="bg-gradient-to-br from-white/5 to-white/[0.02] rounded-3xl shadow-2xl p-8 backdrop-blur-xl border border-white/10"
           style={{
-            boxShadow: '0 0 80px rgba(99, 102, 241, 0.15)'
+            boxShadow: '0 0 80px rgba(79, 79, 79, 0.15)'
           }}
         >
           {/* Logo */}
