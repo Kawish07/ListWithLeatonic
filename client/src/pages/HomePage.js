@@ -7,7 +7,6 @@ import PopularLocations from "../components/PopularLocations";
 import axios from "axios";
 import MortgageCalculator from "../components/MortgageCalculator";
 
-// ========== HomePage Component (UPDATED with spacing fix and enhanced reviews) ==========
 const HomePage = () => {
   // 1. FLIP ANIMATION STATES (FROM LATEST CODE - UNCHANGED)
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -44,10 +43,6 @@ const HomePage = () => {
             status: "published",
           },
         });
-
-          // Normalize API response shapes: some endpoints return
-          // { success: true, properties: [...] } while others return
-          // an array directly or { data: [...] }.
           let fetched = [];
           if (!response || !response.data) {
             fetched = [];
@@ -220,10 +215,6 @@ const HomePage = () => {
         // set in-view flag
         setIsAtLocations(entry.isIntersecting);
 
-        // Determine whether we've reached (or passed) the locations section.
-        // If the section is intersecting -> we've reached it. If it's not intersecting
-        // but its boundingClientRect.top is negative, we've scrolled past it -> also 'reached'.
-        // If it's below the viewport (top > 0) and not intersecting, we haven't reached it.
         try {
           const top = entry.boundingClientRect ? entry.boundingClientRect.top : 0;
           if (entry.isIntersecting) {
@@ -356,6 +347,63 @@ const HomePage = () => {
 
   const isDarkMode = (typeof window !== 'undefined') && (document.documentElement.classList.contains('dark') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
 
+  // Smooth the translateY value to avoid jitter when reversing scroll
+  const [displayTranslate, setDisplayTranslate] = useState(cardTranslateY);
+
+  useEffect(() => {
+    let rafId = null;
+    const smoothStep = () => {
+      setDisplayTranslate((prev) => {
+        const target = cardTranslateY;
+        const delta = target - prev;
+        const step = delta * 0.18; // easing factor
+        const next = Math.abs(step) < 0.05 ? target : prev + step;
+        return next;
+      });
+      rafId = requestAnimationFrame(smoothStep);
+    };
+    rafId = requestAnimationFrame(smoothStep);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [cardTranslateY]);
+
+  // Ensure flip card stays below the hero: compute a dynamic top (px) based on hero bottom
+  const [flipTopPx, setFlipTopPx] = useState(null);
+  useEffect(() => {
+    let raf = 0;
+    const updateTop = () => {
+      try {
+        const minTop = window.innerHeight * 0.24; // baseline 24vh
+        const heroEl = document.querySelector('section.min-h-screen');
+        let desired = minTop;
+        if (heroEl) {
+          const rect = heroEl.getBoundingClientRect();
+          // rect.bottom is px from viewport top; ensure card top is at least 24px below hero bottom
+          desired = Math.max(rect.bottom + 24, minTop);
+        }
+        setFlipTopPx(Math.round(desired));
+      } catch (e) {
+        setFlipTopPx(Math.round(window.innerHeight * 0.24));
+      }
+      raf = 0;
+    };
+
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(updateTop);
+    };
+
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    // initial
+    schedule();
+    return () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
   // 6. RENDER (Enhanced review cards with better design + stylish background pattern)
   return (
     <div
@@ -404,7 +452,6 @@ const HomePage = () => {
           backgroundSize: "40px 40px",
         }}
       />
-
       <div className="h-screen"></div>
 
       {/* CTA Cards replacing review card positions (left-top, left-bottom, right-top) */}
@@ -495,9 +542,9 @@ const HomePage = () => {
         className="fixed left-1/2 pointer-events-none"
         style={{
           left: "50%",
-          top: showContent ? "20vh" : "26vh",
+          top: flipTopPx ? `${flipTopPx}px` : "24vh",
           transform: "translateX(-50%)",
-          opacity: cardOpacity,
+          opacity: 1,
           zIndex: showContent ? 40 : 50,
         }}
       >
@@ -507,8 +554,9 @@ const HomePage = () => {
               width: "100%",
               height: "100%",
               transformStyle: "preserve-3d",
-              transform: `translateY(${cardTranslateY}vh) rotateY(${rotationY}deg) scale(${scale})`,
-              transition: "transform 0.1s linear",
+              transform: `translateY(${displayTranslate}vh) rotateY(${rotationY}deg) scale(${scale})`,
+              // remove CSS transition to allow per-frame updates (prevents jitter)
+              willChange: "transform",
             }}
           >
             {/* Front Face */}
@@ -564,9 +612,9 @@ const HomePage = () => {
                 transform: "rotateY(180deg)",
                 backfaceVisibility: "hidden",
                 boxShadow: `
-                  0 0 0 1px rgba(255, 255, 255, 0.1),
-                  0 0 30px rgba(255, 255, 255, 0.05),
-                  inset 0 0 20px rgba(255, 255, 255, 0.05)
+                  0 0 0 1px rgba(0, 0, 0, 0.1),
+                  0 0 30px rgba(0, 0, 0, 0.05),
+                  inset 0 0 20px rgba(0, 0, 0, 0.05)
                 `,
               }}
             >
@@ -574,7 +622,7 @@ const HomePage = () => {
                 className="absolute inset-0 rounded-3xl opacity-20"
                 style={{
                   background:
-                    "linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%)",
+                    "linear-gradient(135deg, transparent 0%, rgba(0, 0, 0, 0.1) 50%, transparent 100%)",
                   filter: "blur(1px)",
                 }}
               />
@@ -727,7 +775,6 @@ const HomePage = () => {
               ))}
             </div>
           </div>
-
           {/* Mortgage Rates Section */}
           <div className="py-20 px-4 md:px-8 max-w-7xl mx-auto">
             <MortgageRates

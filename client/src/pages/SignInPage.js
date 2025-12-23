@@ -62,9 +62,9 @@ const SignInPage = () => {
         >
           {/* Logo */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white">
+            <Link to="/"><h1 className="text-3xl font-bold text-white">
               <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">ListWith</span>Leatonic
-            </h1>
+            </h1></Link>
             <p className="text-gray-400 mt-2">Sign in to your account</p>
           </div>
 
