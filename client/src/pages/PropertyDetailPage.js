@@ -1,10 +1,10 @@
 // client/src/pages/PropertyDetailPage.js
-// Fixed version with proper image handling
+// Enhanced professional version with improved styling
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
-import { getPropertyImages, getImageUrl } from '../utils/imageHelper'; // ✅ Import image helper
+import { getPropertyImages, getImageUrl } from '../utils/imageHelper';
 import useAuthStore from '../store/authStore';
 import {
   FiMapPin,
@@ -21,7 +21,10 @@ import {
   FiArrowLeft,
   FiChevronLeft,
   FiChevronRight,
-  FiSquare
+  FiSquare,
+  FiCheck,
+  FiClock,
+  FiMessageCircle
 } from 'react-icons/fi';
 
 const PropertyDetailPage = () => {
@@ -66,7 +69,6 @@ const PropertyDetailPage = () => {
         const propertyData = response.data.property;
         setProperty(propertyData);
 
-        // Debug: Log image information
         console.log('📸 Property Images:', {
           rawImages: propertyData.images,
           count: propertyData.images?.length || 0,
@@ -154,10 +156,13 @@ const PropertyDetailPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-accent mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading property details...</p>
+          <div className="relative">
+            <div className="animate-spin rounded-full h-20 w-20 border-4 border-gray-200 mx-auto mb-6"></div>
+            <div className="animate-spin rounded-full h-20 w-20 border-t-4 border-[#2c43f5] absolute top-0 left-1/2 transform -translate-x-1/2"></div>
+          </div>
+          <p className="text-gray-700 font-medium text-lg">Loading property details...</p>
         </div>
       </div>
     );
@@ -165,23 +170,24 @@ const PropertyDetailPage = () => {
 
   if (error || !property) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🏠</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Property Not Found</h2>
-          <p className="text-gray-600 mb-6">{error || 'This property does not exist or has been removed.'}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="bg-accent text-white px-6 py-3 rounded-xl font-semibold hover:bg-accent-dark inline-flex items-center gap-2"
-          >
-            <FiArrowLeft /> Go Back
-          </button>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="bg-white rounded-3xl shadow-2xl p-12">
+            <div className="text-7xl mb-6">🏠</div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Property Not Found</h2>
+            <p className="text-gray-600 mb-8 leading-relaxed">{error || 'This property does not exist or has been removed.'}</p>
+            <button
+              onClick={() => navigate(-1)}
+              className="bg-gradient-to-r from-[#2c43f5] to-[#1e3ad4] text-white px-8 py-4 rounded-xl font-semibold hover:shadow-xl transition-all duration-300 inline-flex items-center gap-3 transform hover:scale-105"
+            >
+              <FiArrowLeft className="text-xl" /> Go Back
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  // ✅ Get properly formatted image URLs
   const imageUrls = getPropertyImages(property);
   const currentImageUrl = imageUrls[currentImageIndex];
 
@@ -192,30 +198,31 @@ const PropertyDetailPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Back Button */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+      {/* Enhanced Header with Gradient */}
+      <div className="bg-gradient-to-r from-white via-blue-50 to-indigo-50 border-b border-gray-200 shadow-sm sticky top-0 z-40 backdrop-blur-lg bg-opacity-90">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-5">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-[#2c43f5] transition-colors"
+            className="flex items-center gap-2 text-gray-700 hover:text-[#2c43f5] transition-all duration-300 font-medium group"
           >
-            <FiArrowLeft /> Back to Listings
+            <FiArrowLeft className="group-hover:-translate-x-1 transition-transform duration-300" />
+            <span>Back to Listings</span>
           </button>
         </div>
       </div>
 
-      {/* Image Gallery */}
-      <div className="bg-white">
+      {/* Premium Image Gallery */}
+      <div className="bg-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
           <div className="relative">
-            {/* Main Image */}
-            <div className="relative h-[500px] rounded-2xl overflow-hidden bg-gray-200">
+            {/* Main Image with Enhanced Styling */}
+            <div className="relative h-[550px] rounded-3xl overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300 shadow-2xl">
               {currentImageUrl ? (
                 <img
                   src={currentImageUrl}
                   alt={`${property.title} - Image ${currentImageIndex + 1}`}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-all duration-500"
                   onError={(e) => {
                     console.error('❌ Failed to load image:', currentImageUrl);
                     e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="500" height="500"%3E%3Crect fill="%23e5e7eb" width="500" height="500"/%3E%3Ctext fill="%239ca3af" x="50%25" y="50%25" text-anchor="middle" dy=".3em" font-size="24"%3EImage not available%3C/text%3E%3C/svg%3E';
@@ -225,58 +232,58 @@ const PropertyDetailPage = () => {
                   }}
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
-                  <FiHome className="w-24 h-24 text-gray-400 mb-4" />
-                  <p className="text-gray-500 text-lg">No images available</p>
+                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-200 via-gray-300 to-gray-400">
+                  <FiHome className="w-32 h-32 text-gray-400 mb-6" />
+                  <p className="text-gray-500 text-xl font-medium">No images available</p>
                 </div>
               )}
 
-              {/* Navigation Arrows */}
+              {/* Premium Navigation Arrows */}
               {imageUrls.length > 1 && (
                 <>
                   <button
                     onClick={prevImage}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition-all hover:scale-110"
+                    className="absolute left-6 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white text-gray-800 p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 border border-gray-200"
                   >
-                    <FiChevronLeft size={24} />
+                    <FiChevronLeft size={28} />
                   </button>
                   <button
                     onClick={nextImage}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition-all hover:scale-110"
+                    className="absolute right-6 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white text-gray-800 p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 border border-gray-200"
                   >
-                    <FiChevronRight size={24} />
+                    <FiChevronRight size={28} />
                   </button>
                 </>
               )}
 
-              {/* Image Counter */}
+              {/* Enhanced Image Counter */}
               {imageUrls.length > 0 && (
-                <div className="absolute bottom-4 right-4 bg-black/70 text-white px-4 py-2 rounded-full text-sm">
+                <div className="absolute bottom-6 right-6 bg-black/80 backdrop-blur-md text-white px-5 py-2.5 rounded-full text-sm font-semibold shadow-xl">
                   {currentImageIndex + 1} / {imageUrls.length}
                 </div>
               )}
 
-              {/* Status Badge */}
-              <div className="absolute top-4 left-4">
-                <span className={`px-4 py-2 rounded-full text-sm font-bold ${property.listingType === 'rent'
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-600'
-                  : 'bg-accent'
-                  } text-white shadow-lg`}>
+              {/* Premium Status Badge */}
+              <div className="absolute top-6 left-6">
+                <span className={`px-6 py-3 rounded-full text-sm font-bold uppercase tracking-wider ${property.listingType === 'rent'
+                  ? 'bg-gradient-to-r from-emerald-500 to-green-600'
+                  : 'bg-gradient-to-r from-[#2c43f5] to-[#1e3ad4]'
+                  } text-white shadow-2xl border-2 border-white/30`}>
                   FOR {property.listingType === 'rent' ? 'RENT' : 'SALE'}
                 </span>
               </div>
             </div>
 
-            {/* Thumbnail Gallery */}
+            {/* Enhanced Thumbnail Gallery */}
             {imageUrls.length > 1 && (
-              <div className="mt-4 grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+              <div className="mt-6 grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                 {imageUrls.map((url, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`relative h-20 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
-                      ? 'border-accent ring-2 ring-accent/30'
-                      : 'border-gray-300 hover:border-gray-400'
+                    className={`relative h-24 rounded-xl overflow-hidden border-3 transition-all duration-300 transform hover:scale-105 ${index === currentImageIndex
+                      ? 'border-[#2c43f5] ring-4 ring-[#2c43f5]/30 shadow-xl'
+                      : 'border-gray-300 hover:border-[#2c43f5]/50 shadow-md hover:shadow-lg'
                       }`}
                   >
                     <img
@@ -287,6 +294,11 @@ const PropertyDetailPage = () => {
                         e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23e5e7eb" width="100" height="100"/%3E%3C/svg%3E';
                       }}
                     />
+                    {index === currentImageIndex && (
+                      <div className="absolute inset-0 bg-[#2c43f5]/20 flex items-center justify-center">
+                        <FiCheck className="text-white text-2xl drop-shadow-lg" />
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -295,60 +307,111 @@ const PropertyDetailPage = () => {
         </div>
       </div>
 
-      {/* Property Details */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+      {/* Enhanced Property Details Section */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Title and Price */}
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">{property.title}</h1>
-              <div className="flex items-center gap-2 text-gray-600 mb-6">
-                <FiMapPin className="text-accent" />
-                <span>{(property.address || property.location) + (property.city ? `, ${property.city}` : '')}</span>
+          <div className="lg:col-span-2 space-y-6">
+            {/* Premium Title and Price Card */}
+            <div className="bg-gradient-to-br from-white to-blue-50 rounded-3xl shadow-xl p-10 border border-gray-100">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">{property.title}</h1>
+              <div className="flex items-center gap-3 text-gray-700 mb-8 text-lg">
+                <div className="bg-[#2c43f5]/10 p-2.5 rounded-full">
+                  <FiMapPin className="text-[#2c43f5] text-xl" />
+                </div>
+                <span className="font-medium">{(property.address || property.location) + (property.city ? `, ${property.city}` : '')}</span>
               </div>
-              <div className="text-4xl font-bold text-accent">
-                ${property.price?.toLocaleString()}
-                {property.listingType === 'rent' && (
-                  <span className="text-lg font-normal text-gray-500 ml-2">/month</span>
-                )}
+              <div className="bg-gradient-to-r from-[#2c43f5] to-[#1e3ad4] rounded-2xl p-6 shadow-lg">
+                <div className="text-white">
+                  <p className="text-sm font-semibold uppercase tracking-wider mb-2 opacity-90">Price</p>
+                  <div className="text-5xl font-bold">
+                    ${property.price?.toLocaleString()}
+                    {property.listingType === 'rent' && (
+                      <span className="text-2xl font-normal opacity-90 ml-3">/month</span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Description */}
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Description</h2>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+            {/* Enhanced Description Card */}
+            <div className="bg-white rounded-3xl shadow-xl p-10 border border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-[#2c43f5]/10 p-3 rounded-xl">
+                  <FiMessageCircle className="text-[#2c43f5] text-2xl" />
+                </div>
+                <h2 className="text-3xl font-bold text-gray-900">Description</h2>
+              </div>
+              <p className="text-gray-700 leading-relaxed text-lg whitespace-pre-line">
                 {property.description || 'No description available.'}
               </p>
             </div>
 
-            {/* Amenities */}
-            {/* Amenities / Features: prefer `features` object, fall back to `amenities` array */}
+            {/* Premium Amenities Card */}
             {( (property.features && Object.keys(property.features).length > 0) || (property.amenities && property.amenities.length > 0) ) && (
-              <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Amenities & Features</h2>
+              <div className="bg-white rounded-3xl shadow-xl p-10 border border-gray-100">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="bg-[#2c43f5]/10 p-3 rounded-xl">
+                    <FiHome className="text-[#2c43f5] text-2xl" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-gray-900">Amenities & Features</h2>
+                </div>
 
-                {/* Features object as badges */}
                 {property.features && Object.keys(property.features).length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {property.features.hasParking && <span className="px-3 py-1 bg-gray-100 rounded-full flex items-center gap-2">🚗 Parking</span>}
-                    {property.features.hasPool && <span className="px-3 py-1 bg-gray-100 rounded-full flex items-center gap-2">🏊 Pool</span>}
-                    {property.features.hasGarden && <span className="px-3 py-1 bg-gray-100 rounded-full flex items-center gap-2">🌳 Garden</span>}
-                    {property.features.hasAC && <span className="px-3 py-1 bg-gray-100 rounded-full flex items-center gap-2">❄️ AC</span>}
-                    {property.features.hasHeating && <span className="px-3 py-1 bg-gray-100 rounded-full flex items-center gap-2">🔥 Heating</span>}
-                    {property.features.hasLaundry && <span className="px-3 py-1 bg-gray-100 rounded-full flex items-center gap-2">👕 Laundry</span>}
-                    {property.features.hasGym && <span className="px-3 py-1 bg-gray-100 rounded-full flex items-center gap-2">💪 Gym</span>}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                    {property.features.hasParking && (
+                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 px-5 py-4 rounded-xl border border-blue-200 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <span className="text-3xl">🚗</span>
+                        <span className="font-semibold text-gray-800">Parking</span>
+                      </div>
+                    )}
+                    {property.features.hasPool && (
+                      <div className="bg-gradient-to-br from-blue-50 to-cyan-50 px-5 py-4 rounded-xl border border-cyan-200 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <span className="text-3xl">🏊</span>
+                        <span className="font-semibold text-gray-800">Pool</span>
+                      </div>
+                    )}
+                    {property.features.hasGarden && (
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 px-5 py-4 rounded-xl border border-green-200 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <span className="text-3xl">🌳</span>
+                        <span className="font-semibold text-gray-800">Garden</span>
+                      </div>
+                    )}
+                    {property.features.hasAC && (
+                      <div className="bg-gradient-to-br from-cyan-50 to-blue-50 px-5 py-4 rounded-xl border border-cyan-200 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <span className="text-3xl">❄️</span>
+                        <span className="font-semibold text-gray-800">AC</span>
+                      </div>
+                    )}
+                    {property.features.hasHeating && (
+                      <div className="bg-gradient-to-br from-orange-50 to-red-50 px-5 py-4 rounded-xl border border-orange-200 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <span className="text-3xl">🔥</span>
+                        <span className="font-semibold text-gray-800">Heating</span>
+                      </div>
+                    )}
+                    {property.features.hasLaundry && (
+                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 px-5 py-4 rounded-xl border border-purple-200 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <span className="text-3xl">👕</span>
+                        <span className="font-semibold text-gray-800">Laundry</span>
+                      </div>
+                    )}
+                    {property.features.hasGym && (
+                      <div className="bg-gradient-to-br from-red-50 to-orange-50 px-5 py-4 rounded-xl border border-red-200 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <span className="text-3xl">💪</span>
+                        <span className="font-semibold text-gray-800">Gym</span>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Legacy amenities array */}
                 {property.amenities && property.amenities.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {property.amenities.map((amenity, index) => (
-                      <div key={index} className="flex items-center gap-2 text-gray-700">
-                        <span className="text-green-500">✓</span>
-                        <span>{amenity}</span>
+                      <div key={index} className="flex items-center gap-3 text-gray-700 bg-gray-50 px-4 py-3 rounded-xl border border-gray-200">
+                        <div className="bg-green-500 text-white rounded-full p-1">
+                          <FiCheck className="text-sm" />
+                        </div>
+                        <span className="font-medium">{amenity}</span>
                       </div>
                     ))}
                   </div>
@@ -357,45 +420,57 @@ const PropertyDetailPage = () => {
             )}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-lg p-6 mt-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Quick Inquiry</h3>
+          {/* Enhanced Sidebar */}
+          <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+            {/* Premium Quick Inquiry Card */}
+            <div className="bg-gradient-to-br from-white to-blue-50 rounded-3xl shadow-2xl p-8 border border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-[#2c43f5]/10 p-3 rounded-xl">
+                  <FiMail className="text-[#2c43f5] text-2xl" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">Quick Inquiry</h3>
+              </div>
               <form onSubmit={handleQuickInquiry} className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Your Name"
-                  value={inquiryForm.name}
-                  onChange={(e) => setInquiryForm({ ...inquiryForm, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
-                  required
-                />
-                <input
-                  type="email"
-                  placeholder="Your Email"
-                  value={inquiryForm.email}
-                  onChange={(e) => setInquiryForm({ ...inquiryForm, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
-                  required
-                />
-                <input
-                  type="tel"
-                  placeholder="Your Phone"
-                  value={inquiryForm.phone}
-                  onChange={(e) => setInquiryForm({ ...inquiryForm, phone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
-                />
                 <div>
-                  <label className="block text-gray-700 mb-2">I'm interested to:</label>
-                  <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Your Name"
+                    value={inquiryForm.name}
+                    onChange={(e) => setInquiryForm({ ...inquiryForm, name: e.target.value })}
+                    className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#2c43f5] focus:border-[#2c43f5] transition-all duration-300 text-gray-800 font-medium"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    type="email"
+                    placeholder="Your Email"
+                    value={inquiryForm.email}
+                    onChange={(e) => setInquiryForm({ ...inquiryForm, email: e.target.value })}
+                    className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#2c43f5] focus:border-[#2c43f5] transition-all duration-300 text-gray-800 font-medium"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    type="tel"
+                    placeholder="Your Phone"
+                    value={inquiryForm.phone}
+                    onChange={(e) => setInquiryForm({ ...inquiryForm, phone: e.target.value })}
+                    className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#2c43f5] focus:border-[#2c43f5] transition-all duration-300 text-gray-800 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-800 mb-3 font-semibold text-sm uppercase tracking-wide">I'm interested to:</label>
+                  <div className="grid grid-cols-2 gap-2">
                     {['buy', 'rent', 'viewing', 'info'].map((purpose) => (
                       <button
                         key={purpose}
                         type="button"
                         onClick={() => setInquiryForm({ ...inquiryForm, purpose })}
-                        className={`px-3 py-1 rounded-full text-sm ${inquiryForm.purpose === purpose
-                          ? 'bg-accent text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${inquiryForm.purpose === purpose
+                          ? 'bg-gradient-to-r from-[#2c43f5] to-[#1e3ad4] text-white shadow-lg transform scale-105'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
                           }`}
                       >
                         {purpose === 'buy' ? 'Buy' :
@@ -405,34 +480,43 @@ const PropertyDetailPage = () => {
                     ))}
                   </div>
                 </div>
-                <textarea
-                  placeholder="Your message..."
-                  value={inquiryForm.message}
-                  onChange={(e) => setInquiryForm({ ...inquiryForm, message: e.target.value })}
-                  rows="3"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2c43f5] focus:border-transparent resize-none"
-                  required
-                />
+                <div>
+                  <textarea
+                    placeholder="Your message..."
+                    value={inquiryForm.message}
+                    onChange={(e) => setInquiryForm({ ...inquiryForm, message: e.target.value })}
+                    rows="4"
+                    className="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#2c43f5] focus:border-[#2c43f5] transition-all duration-300 resize-none text-gray-800 font-medium"
+                    required
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={sendingInquiry}
-                  className="w-full bg-[#2c43f5] text-white py-3 rounded-xl font-semibold hover:bg-[#0519ad] transition-colors disabled:opacity-50"
+                  className="w-full bg-gradient-to-r from-[#2c43f5] to-[#1e3ad4] text-white py-4 rounded-xl font-bold text-lg hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
                 >
-                  {sendingInquiry ? 'Sending...' : 'Send Inquiry'}
+                  {sendingInquiry ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                      Sending...
+                    </span>
+                  ) : (
+                    'Send Inquiry'
+                  )}
                 </button>
               </form>
             </div>
 
-            {/* Share Buttons */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Share Property</h3>
-              <div className="flex gap-3">
-                <button className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors">
-                  <FiShare2 className="inline mr-2" />
+            {/* Enhanced Share & Save Card */}
+            <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+              <h3 className="text-xl font-bold text-gray-900 mb-5">Share Property</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button className="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3.5 px-4 rounded-xl hover:shadow-xl transition-all duration-300 font-semibold flex items-center justify-center gap-2 transform hover:scale-105">
+                  <FiShare2 className="text-lg" />
                   Share
                 </button>
-                <button className="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition-colors">
-                  <FiHeart className="inline mr-2" />
+                <button className="bg-gradient-to-r from-red-500 to-pink-600 text-white py-3.5 px-4 rounded-xl hover:shadow-xl transition-all duration-300 font-semibold flex items-center justify-center gap-2 transform hover:scale-105">
+                  <FiHeart className="text-lg" />
                   Save
                 </button>
               </div>

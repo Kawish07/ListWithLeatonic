@@ -249,9 +249,9 @@ function AppContent() {
         
         <Route path="/property/:id" element={
           <>
-            <Header />
+            {/* <Header /> */}
             <main className="flex-1">
-              <HeroSection />
+              {/* <HeroSection /> */}
               <PropertyDetailPage />
             </main>
             <Footer />
