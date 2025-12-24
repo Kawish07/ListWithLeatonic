@@ -21,6 +21,10 @@ const ContactUsPage = () => {
   const [isFlipComplete, setIsFlipComplete] = useState(false);
   const [showContent, setShowContent] = useState(false);
 
+  // Smooth translate and dynamic top for flip card (HomePage parity)
+  const [displayTranslate, setDisplayTranslate] = useState(0);
+  const [flipTopPx, setFlipTopPx] = useState(null);
+
   // Refs
   const flipSectionRef = useRef(null);
   const contentRef = useRef(null);
@@ -116,6 +120,56 @@ const ContactUsPage = () => {
   const scale = 1 + (Math.max(0, scrollProgress - 0.4) / 0.6) * 11;
   const cardOpacity = scrollProgress < 0.3 ? scrollProgress / 0.3 : 1;
   const overlayOpacity = showContent ? 1 : 0;
+
+  useEffect(() => {
+    let rafId = null;
+    const smoothStep = () => {
+      setDisplayTranslate((prev) => {
+        const target = cardTranslateY;
+        const delta = target - prev;
+        const step = delta * 0.18;
+        const next = Math.abs(step) < 0.05 ? target : prev + step;
+        return next;
+      });
+      rafId = requestAnimationFrame(smoothStep);
+    };
+    rafId = requestAnimationFrame(smoothStep);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [cardTranslateY]);
+
+  useEffect(() => {
+    let raf = 0;
+    const updateTop = () => {
+      try {
+        const minTop = window.innerHeight * 0.24;
+        const heroEl = document.querySelector('section.min-h-screen');
+        let desired = minTop;
+        if (heroEl) {
+          const rect = heroEl.getBoundingClientRect();
+          desired = Math.max(rect.bottom + 24, minTop);
+        }
+        setFlipTopPx(Math.round(desired));
+      } catch (e) {
+        setFlipTopPx(Math.round(window.innerHeight * 0.24));
+      }
+      raf = 0;
+    };
+
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(updateTop);
+    };
+
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    schedule();
+    return () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -224,7 +278,7 @@ const ContactUsPage = () => {
         className="fixed left-1/2 pointer-events-none"
         style={{
           left: "50%",
-          top: showContent ? "20vh" : "26vh",
+          top: flipTopPx ? `${flipTopPx}px` : "24vh",
           transform: "translateX(-50%)",
           opacity: cardOpacity,
           zIndex: showContent ? 40 : 50,
@@ -236,8 +290,8 @@ const ContactUsPage = () => {
               width: "100%",
               height: "100%",
               transformStyle: "preserve-3d",
-              transform: `translateY(${cardTranslateY}vh) rotateY(${rotationY}deg) scale(${scale})`,
-              transition: "transform 0.1s linear",
+              transform: `translateY(${displayTranslate}vh) rotateY(${rotationY}deg) scale(${scale})`,
+              willChange: "transform",
             }}
           >
             {/* Front Face */}

@@ -185,19 +185,19 @@ export default function MortgageRates({ apiUrl, darkMode = false }) {
   }, []);
 
   // Only mount the Recharts ResponsiveContainer after chartReady and isVisible
+  // Once mounted, keep it mounted to avoid repeated mount/unmount loops
   useEffect(() => {
     let t = null;
     const tryMount = () => {
       const el = chartContainerRef.current;
-      if (!el) return setChartMountReady(false);
+      if (!el) return;
       const rect = el.getBoundingClientRect();
       const hasSize = rect.width > 0 && rect.height > 0;
       if (chartReady && isVisible && hasSize) {
-        // give the layout a short moment to stabilize
-        t = setTimeout(() => setChartMountReady(true), 120);
-      } else {
-        setChartMountReady(false);
+        // give the layout a short moment to stabilize and mount once
+        t = setTimeout(() => setChartMountReady((prev) => prev || true), 120);
       }
+      // Do not set to false here; leaving the chart mounted avoids animation/react state loops
     };
 
     tryMount();
@@ -216,8 +216,21 @@ export default function MortgageRates({ apiUrl, darkMode = false }) {
 
     async function fetchRemote(r) {
       if (!apiUrl) return null;
+
+      // Avoid calling API-Ninjas endpoint from the browser when no API key is provided.
+      // This prevents noisy 400 responses in the console during development.
+      const isApiNinjas = apiUrl.includes('api.api-ninjas.com');
+      const apiKey = process.env.REACT_APP_MORTGAGE_RATES_API_KEY;
+      if (isApiNinjas && !apiKey) {
+        return null;
+      }
+
       try {
-        const res = await fetch(`${apiUrl}?range=${r}`);
+        const url = `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}range=${encodeURIComponent(r)}`;
+        const headers = {};
+        if (isApiNinjas && apiKey) headers['X-Api-Key'] = apiKey;
+
+        const res = await fetch(url, { headers });
         if (!res.ok) return null;
         const json = await res.json();
         return json.data || json;
@@ -501,7 +514,7 @@ export default function MortgageRates({ apiUrl, darkMode = false }) {
         {/* Chart */}
         <div ref={chartContainerRef} className="relative" style={{ height: 400, minHeight: 300, minWidth: 0 }}>
           {chartMountReady ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={400} minHeight={300} minWidth={0}>
             <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
               <defs>
                 <linearGradient id="grad30" x1="0" y1="0" x2="0" y2="1">

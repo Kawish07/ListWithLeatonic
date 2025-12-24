@@ -21,7 +21,8 @@ const ForRentPage = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isFlipComplete, setIsFlipComplete] = useState(false);
   const [showContent, setShowContent] = useState(false);
-  const [locationReached, setLocationReached] = useState(false);
+  const [isAtLocations, setIsAtLocations] = useState(false);
+  const [hasReachedLocations, setHasReachedLocations] = useState(false);
 
   // Refs
   const flipSectionRef = useRef(null);
@@ -81,47 +82,41 @@ const ForRentPage = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        setLocationReached(entry.isIntersecting);
-
+        setIsAtLocations(entry.isIntersecting);
         try {
           const top = entry.boundingClientRect ? entry.boundingClientRect.top : 0;
           if (entry.isIntersecting) {
-            // We've reached locations section
+            setHasReachedLocations(true);
           } else if (top < 0) {
-            // We've scrolled past it
+            setHasReachedLocations(true);
+          } else {
+            setHasReachedLocations(false);
           }
         } catch (e) {
-          // fallback
+          setHasReachedLocations(entry.isIntersecting);
         }
       },
-      {
-        root: null,
-        threshold: 0.35,
-      }
+      { root: null, threshold: 0.35 }
     );
 
     observer.observe(el);
     return () => observer.disconnect();
   }, [locationsRef]);
 
-  // Keep the page <body> background in sync with sections
+  // Keep the page <body> background in sync with the sections below the hero.
   useEffect(() => {
     try {
-      if (locationReached) {
+      if (hasReachedLocations) {
         document.body.style.backgroundColor = '#ffffff';
       } else {
         document.body.style.backgroundColor = '#141414';
       }
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
 
     return () => {
-      try {
-        document.body.style.backgroundColor = '';
-      } catch (e) {}
+      try { document.body.style.backgroundColor = ''; } catch (e) {}
     };
-  }, [locationReached]);
+  }, [hasReachedLocations]);
 
   // 4. SCROLL HANDLER (OPTIMIZED: Smooth appearance and no jitter)
   useEffect(() => {
@@ -132,7 +127,6 @@ const ForRentPage = () => {
         window.requestAnimationFrame(() => {
           const scrollY = window.scrollY;
           const windowHeight = window.innerHeight;
-
           const startAppear = windowHeight * 0.1;
           const fullyVisible = windowHeight * 0.7;
           const startFlip = windowHeight * 1.2;
@@ -224,6 +218,62 @@ const ForRentPage = () => {
   const cardOpacity = scrollProgress < 0.3 ? scrollProgress / 0.3 : 1;
   const overlayOpacity = showContent ? 1 : 0;
 
+  // Smooth the translateY value to avoid jitter when reversing scroll
+  const [displayTranslate, setDisplayTranslate] = useState(cardTranslateY);
+
+  useEffect(() => {
+    let rafId = null;
+    const smoothStep = () => {
+      setDisplayTranslate((prev) => {
+        const target = cardTranslateY;
+        const delta = target - prev;
+        const step = delta * 0.18; // easing factor
+        const next = Math.abs(step) < 0.05 ? target : prev + step;
+        return next;
+      });
+      rafId = requestAnimationFrame(smoothStep);
+    };
+    rafId = requestAnimationFrame(smoothStep);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [cardTranslateY]);
+
+  // Ensure flip card stays below the hero: compute a dynamic top (px) based on hero bottom
+  const [flipTopPx, setFlipTopPx] = useState(null);
+  useEffect(() => {
+    let raf = 0;
+    const updateTop = () => {
+      try {
+        const minTop = window.innerHeight * 0.24; // baseline 24vh
+        const heroEl = document.querySelector('section.min-h-screen');
+        let desired = minTop;
+        if (heroEl) {
+          const rect = heroEl.getBoundingClientRect();
+          desired = Math.max(rect.bottom + 24, minTop);
+        }
+        setFlipTopPx(Math.round(desired));
+      } catch (e) {
+        setFlipTopPx(Math.round(window.innerHeight * 0.24));
+      }
+      raf = 0;
+    };
+
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(updateTop);
+    };
+
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    // initial
+    schedule();
+    return () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
   const locationData = [
     { city: 'New York', count: '1,240+', emoji: '🗽', img: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&q=80' },
     { city: 'Los Angeles', count: '980+', emoji: '🌴', img: 'https://images.unsplash.com/photo-1444723121867-7a241cacace9?w=800&q=80' },
@@ -234,24 +284,24 @@ const ForRentPage = () => {
   ];
 
   return (
-    <div
-      className="relative min-h-[400vh]"
-      style={{
-        backgroundColor: locationReached ? "#f5f5f5" : (showContent ? "#141414" : "#ffffff"),
-        overflowX: "hidden",
-        overflow: "hidden",
-      }}
-    >
-      {/* Dark overlay */}
       <div
-        className="fixed inset-0 pointer-events-none"
+        className="relative min-h-[400vh]"
         style={{
-          backgroundColor: "#141414",
-          opacity: !locationReached ? overlayOpacity : 0,
-          transition: "opacity 600ms ease",
-          zIndex: 10,
+          backgroundColor: hasReachedLocations ? "#f5f5f5" : (showContent ? "#141414" : "#ffffff"),
+          overflowX: "hidden",
+          overflow: "hidden",
         }}
-      />
+      >
+      {/* Dark overlay */}
+          <div
+            className="fixed inset-0 pointer-events-none"
+            style={{
+              backgroundColor: "#141414",
+              opacity: !hasReachedLocations ? overlayOpacity : 0,
+              transition: "opacity 600ms ease",
+              zIndex: 10,
+            }}
+          />
 
       <div className="h-screen"></div>
 
@@ -261,7 +311,7 @@ const ForRentPage = () => {
         className="fixed left-1/2 pointer-events-none"
         style={{
           left: "50%",
-          top: showContent ? "20vh" : "26vh",
+          top: flipTopPx ? `${flipTopPx}px` : "24vh",
           transform: "translateX(-50%)",
           opacity: cardOpacity,
           zIndex: showContent ? 40 : 50,
@@ -273,8 +323,8 @@ const ForRentPage = () => {
               width: "100%",
               height: "100%",
               transformStyle: "preserve-3d",
-              transform: `translateY(${cardTranslateY}vh) rotateY(${rotationY}deg) scale(${scale})`,
-              transition: "transform 0.1s linear",
+              transform: `translateY(${displayTranslate}vh) rotateY(${rotationY}deg) scale(${scale})`,
+              willChange: "transform",
             }}
           >
             {/* Front Face */}
@@ -350,26 +400,26 @@ const ForRentPage = () => {
       </div>
 
       {/* Content Area */}
-      <div
-        ref={contentRef}
-        className="relative"
-        style={{
-          marginTop: showContent ? "85vh" : "100vh",
-          opacity: showContent ? 1 : 0,
-          transform: showContent ? "translateY(0)" : "translateY(50px)",
-          transition:
-            "opacity 0.8s ease, transform 0.8s ease, margin-top 0.6s ease",
-          pointerEvents: showContent ? "auto" : "none",
-          zIndex: showContent ? 60 : 30,
-        }}
-      >
-        <div
-          className={`rounded-t-[64px] overflow-hidden min-h-screen pt-20 ${locationReached ? 'light-mode-active' : ''}`}
-          style={{
-            backgroundColor: locationReached ? "#f5f5f5" : "#141414",
-            transition: "background-color 700ms ease-in-out",
-          }}
-        >
+          <div
+            ref={contentRef}
+            className="relative"
+            style={{
+              marginTop: showContent ? "85vh" : "100vh",
+              opacity: showContent ? 1 : 0,
+              transform: showContent ? "translateY(0)" : "translateY(50px)",
+              transition:
+                "opacity 0.8s ease, transform 0.8s ease, margin-top 0.6s ease",
+              pointerEvents: showContent ? "auto" : "none",
+              zIndex: showContent ? 60 : 30,
+            }}
+          >
+            <div
+              className={`rounded-t-[64px] overflow-hidden min-h-screen pt-20 ${hasReachedLocations ? 'light-mode-active' : ''}`}
+              style={{
+                backgroundColor: hasReachedLocations ? "#f5f5f5" : "#141414",
+                transition: "background-color 700ms ease-in-out",
+              }}
+            >
           {/* Filter Section */}
           <div className="py-10 px-4 md:px-8 max-w-7xl mx-auto">
             <div className="rounded-3xl p-8 mb-8 border border-gray-700 shadow-2xl" style={{ backgroundColor: 'transparent' }}>
@@ -553,7 +603,7 @@ const ForRentPage = () => {
               <div
                 className="rounded-3xl shadow-lg p-12 text-center border border-gray-700 heading-transition"
                 style={{
-                  backgroundColor: locationReached ? '#141414' : 'transparent',
+                  backgroundColor: hasReachedLocations ? '#141414' : 'transparent',
                   color: '#ffffff',
                   transition: 'background-color 700ms ease-in-out, color 700ms ease-in-out',
                 }}
@@ -592,7 +642,7 @@ const ForRentPage = () => {
                   Popular Rental Locations
                 </h2>
 
-                <p className={`text-lg heading-transition ${locationReached ? 'text-[#141414]' : 'text-gray-300'}`}>
+                <p className={`text-lg heading-transition ${hasReachedLocations ? 'text-[#141414]' : 'text-gray-300'}`}>
                   Discover rental properties in trending cities
                 </p>
               </div>

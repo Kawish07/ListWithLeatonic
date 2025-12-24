@@ -483,17 +483,6 @@ const Header = () => {
                     Sign In
                   </span>
                 </button>
-                
-                <p className="text-center text-gray-400 text-sm">
-                  Don't have an account?{" "}
-                  <Link
-                    to="/signup"
-                    onClick={handleCloseMenu}
-                    className="text-purple-400 hover:text-purple-300 font-medium hover:underline transition-all duration-300"
-                  >
-                    Sign up now
-                  </Link>
-                </p>
               </div>
             )}
           </div>

@@ -354,7 +354,7 @@ const HeroSection = ({ overrideTitle, overrideSubtitle, overrideCta, overrideHig
                     {current.title}{' '}
                     <span
                         ref={highlightRef}
-                        className="inline-block bg-gradient-to-r from-black to-black-900 text-white px-6 py-3 rounded-xl shadow-lg animate-fade-pulse"
+                        className="inline-block bg-gradient-to-r from-black to-black text-white px-6 py-3 rounded-xl shadow-lg animate-fade-pulse"
                     >
                         {current.highlight}
                     </span>
